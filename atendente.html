@@ -91,6 +91,22 @@
     flex-shrink: 0; max-height: 40vh; display: flex; flex-direction: column;
   }
   #carrinho-lista { overflow-y: auto; margin-bottom: 10px; -webkit-overflow-scrolling: touch; }
+
+  .obs-gerais-secao { border-top: 1px solid var(--ink-line); padding-top: 10px; margin-bottom: 10px; }
+  .obs-gerais-secao .modal-secao-label { margin: 0 0 8px; }
+  .obs-gerais-linha { display: flex; gap: 8px; margin-bottom: 8px; }
+  .obs-gerais-linha input { flex: 1; font-size: 13px; padding: 10px 12px; }
+  .obs-gerais-linha button {
+    flex-shrink: 0; background: var(--ink-line); color: var(--text-primary);
+    padding: 0 16px; border-radius: var(--radius-sm); font-weight: 700; font-size: 18px;
+  }
+  #lista-obs-gerais { display: flex; flex-direction: column; gap: 6px; }
+  .obs-geral-item {
+    display: flex; justify-content: space-between; align-items: center;
+    background: var(--ink); border: 1px solid var(--ink-line); border-radius: var(--radius-sm);
+    padding: 8px 10px; font-size: 12px;
+  }
+  .obs-geral-item .btn-remover { font-size: 13px; }
   .carrinho-linha { display: flex; justify-content: space-between; align-items: flex-start; padding: 6px 0; border-bottom: 1px solid var(--ink-line); }
   .carrinho-linha-nome { font-size: 13px; font-weight: 600; }
   .carrinho-linha-obs { font-size: 11px; color: var(--text-faint); }
@@ -190,6 +206,16 @@
 
   <div id="carrinho-sheet">
     <div id="carrinho-lista"></div>
+
+    <div class="obs-gerais-secao">
+      <div class="modal-secao-label">Observações gerais do pedido</div>
+      <div class="obs-gerais-linha">
+        <input type="text" id="input-obs-geral" placeholder="Ex: 3 copos com limão e gelo">
+        <button onclick="adicionarObsGeral()">+</button>
+      </div>
+      <div id="lista-obs-gerais"></div>
+    </div>
+
     <div id="carrinho-total-linha">
       <span class="label">Total do pedido</span>
       <span id="carrinho-total">R$ 0,00</span>
