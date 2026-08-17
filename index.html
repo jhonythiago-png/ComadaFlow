@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>ComandaFlow — Login</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<link rel="stylesheet" href="css/tokens.css">
+<style>
+  body {
+    display: flex; align-items: center; justify-content: center;
+    min-height: 100vh; padding: 24px;
+  }
+  .login-card {
+    width: 100%; max-width: 360px;
+  }
+  .brand {
+    text-align: center; margin-bottom: 32px;
+  }
+  .brand .logo {
+    font-family: var(--font-display); font-weight: 800; font-size: 30px;
+    color: var(--text-primary);
+  }
+  .brand .slogan {
+    font-family: var(--font-mono); font-size: 12px; color: var(--crust);
+    margin-top: 4px; letter-spacing: .02em;
+  }
+  .campo { margin-bottom: 14px; }
+  .campo label {
+    display: block; font-size: 12px; color: var(--text-muted);
+    margin-bottom: 6px; font-family: var(--font-mono); text-transform: uppercase; letter-spacing: .04em;
+  }
+  #btn-entrar { width: 100%; margin-top: 8px; }
+  #mensagem-erro {
+    color: var(--paprika); font-size: 13px; margin-top: 12px; text-align: center; min-height: 18px;
+  }
+  #btn-entrar:disabled { opacity: .6; }
+</style>
+</head>
+<body>
+
+<div class="login-card">
+  <div class="brand">
+    <div class="logo">ComandaFlow</div>
+    <div class="slogan">"Assuma o comando do seu negócio."</div>
+  </div>
+
+  <form id="form-login">
+    <div class="campo">
+      <label for="username">Usuário</label>
+      <input type="text" id="username" autocomplete="username" required autocapitalize="none">
+    </div>
+    <div class="campo">
+      <label for="senha">Senha</label>
+      <input type="password" id="senha" autocomplete="current-password" required>
+    </div>
+    <button type="submit" id="btn-entrar" class="btn-primary">Entrar</button>
+    <div id="mensagem-erro"></div>
+  </form>
+</div>
+
+<script src="js/supabase-client.js"></script>
+<script>
+const form = document.getElementById('form-login');
+const btnEntrar = document.getElementById('btn-entrar');
+const mensagemErro = document.getElementById('mensagem-erro');
+
+form.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  mensagemErro.textContent = '';
+  btnEntrar.disabled = true;
+  btnEntrar.textContent = 'Entrando...';
+
+  const username = document.getElementById('username').value.trim().toLowerCase();
+  const senha = document.getElementById('senha').value;
+
+  try {
+    // 1) Descobrir o e-mail interno vinculado a esse username
+    const { data: email, error: erroEmail } = await supabaseClient
+      .rpc('fn_obter_email_por_username', { p_username: username });
+
+    if (erroEmail || !email) {
+      mensagemErro.textContent = 'Usuário não encontrado.';
+      btnEntrar.disabled = false;
+      btnEntrar.textContent = 'Entrar';
+      return;
+    }
+
+    // 2) Login de fato
+    const { data: sessao, error: erroLogin } = await supabaseClient.auth.signInWithPassword({
+      email, password: senha,
+    });
+
+    if (erroLogin || !sessao?.user) {
+      mensagemErro.textContent = 'Usuário ou senha incorretos.';
+      btnEntrar.disabled = false;
+      btnEntrar.textContent = 'Entrar';
+      return;
+    }
+
+    // 3) Buscar o perfil (nível de acesso, estabelecimento) e guardar na sessão do navegador
+    const { data: perfil, error: erroPerfil } = await supabaseClient
+      .from('perfis')
+      .select('id, nome, username, nivel_acesso, estabelecimento_id')
+      .eq('auth_user_id', sessao.user.id)
+      .single();
+
+    if (erroPerfil || !perfil) {
+      mensagemErro.textContent = 'Não foi possível carregar seu perfil.';
+      btnEntrar.disabled = false;
+      btnEntrar.textContent = 'Entrar';
+      return;
+    }
+
+    sessionStorage.setItem('comandaflow_perfil', JSON.stringify(perfil));
+
+    // Por enquanto todo mundo cai no app do atendente
+    // (quando caixa.html e master.html existirem, redirecionamos por nível de acesso)
+    window.location.href = 'atendente.html';
+
+  } catch (erro) {
+    mensagemErro.textContent = 'Erro ao conectar. Verifique sua internet.';
+    btnEntrar.disabled = false;
+    btnEntrar.textContent = 'Entrar';
+  }
+});
+</script>
+
+</body>
+</html>
