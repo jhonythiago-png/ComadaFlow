@@ -8,6 +8,7 @@ const estado = {
   cardapio: [],               // [{ categoria, itens: [{...item, ingredientes: [...]}] }]
   categoriaAtivaIndex: 0,
   carrinho: [],                // [{ item, quantidade, precoUnitario, observacao, sabores: [{id, nome, foiAcrescimo, precoAcrescimo}] }]
+  observacoesGerais: [],        // ["3 copos com limão e gelo", "2 pratos com talheres", ...]
   itemEmEdicao: null,          // item sendo montado no modal agora
   selecaoSabores: [],          // ordem de seleção de sabores no modal (pro cálculo de cota)
   ingredientesRemovidos: [],   // ids removidos de um item 'fixo' no modal
@@ -420,8 +421,34 @@ function renderCarrinho() {
     `).join('');
   }
 
+  renderObsGerais();
+
   document.getElementById('carrinho-total').textContent = `R$ ${total.toFixed(2).replace('.', ',')}`;
   document.getElementById('btn-enviar-pedido').disabled = estado.carrinho.length === 0;
+}
+
+function adicionarObsGeral() {
+  const input = document.getElementById('input-obs-geral');
+  const texto = input.value.trim();
+  if (!texto) return;
+  estado.observacoesGerais.push(texto);
+  input.value = '';
+  renderObsGerais();
+}
+
+function removerObsGeral(index) {
+  estado.observacoesGerais.splice(index, 1);
+  renderObsGerais();
+}
+
+function renderObsGerais() {
+  const lista = document.getElementById('lista-obs-gerais');
+  lista.innerHTML = estado.observacoesGerais.map((texto, i) => `
+    <div class="obs-geral-item">
+      <span>${texto}</span>
+      <button class="btn-remover" onclick="removerObsGeral(${i})">✕</button>
+    </div>
+  `).join('');
 }
 
 async function enviarPedido() {
@@ -462,8 +489,23 @@ async function enviarPedido() {
       }
     }
 
+    // Observações gerais do pedido (ex: "3 copos com limão e gelo") — linhas separadas, não ligadas a item
+    if (estado.observacoesGerais.length > 0) {
+      const linhasObs = estado.observacoesGerais.map(texto => ({
+        comanda_id: estado.comandaAtual.id,
+        texto,
+        status: 'enviado',
+        criado_por: estado.perfil.id,
+      }));
+      const { error: erroObs } = await supabaseClient
+        .from('comanda_observacoes')
+        .insert(linhasObs);
+      if (erroObs) throw erroObs;
+    }
+
     mostrarToast('Pedido enviado pra cozinha! 🔥');
     estado.carrinho = [];
+    estado.observacoesGerais = [];
     renderCarrinho();
 
   } catch (erro) {
