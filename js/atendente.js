@@ -227,10 +227,11 @@ function fecharModal() {
 function renderCorpoModal() {
   const item = estado.itemEmEdicao;
   const corpo = document.getElementById('modal-corpo');
+  let htmlEspecifico = '';
 
   if (item.tipo_montagem === 'fixo') {
     const padrao = item.item_ingredientes.filter(ii => ii.papel === 'padrao');
-    corpo.innerHTML = `
+    htmlEspecifico = `
       <div class="modal-secao-label">Ingredientes (toque para remover)</div>
       <div class="ing-list">
         ${padrao.map(ii => `
@@ -240,12 +241,10 @@ function renderCorpoModal() {
           </button>
         `).join('')}
       </div>
-      <div class="modal-secao-label">Observação adicional</div>
-      <textarea id="modal-observacao-extra" rows="2" placeholder="Ex: cortar ao meio"></textarea>
     `;
   } else if (item.tipo_montagem === 'monte_sabores') {
     const opcoes = item.item_ingredientes.filter(ii => ii.papel === 'opcao');
-    corpo.innerHTML = `
+    htmlEspecifico = `
       <div class="modal-secao-label">Escolha ${item.qtd_sabores_inclusos} sabores (os próximos entram como acréscimo)</div>
       <div class="ing-list" id="lista-sabores-modal">
         ${opcoes.map(ii => renderChipSabor(ii)).join('')}
@@ -253,16 +252,22 @@ function renderCorpoModal() {
     `;
   } else if (item.tipo_montagem === 'escolha_um') {
     const opcoes = item.item_ingredientes.filter(ii => ii.papel === 'opcao');
-    corpo.innerHTML = `
+    htmlEspecifico = `
       <div class="modal-secao-label">Escolha 1 sabor</div>
       <div class="ing-list" id="lista-sabores-modal">
         ${opcoes.map(ii => renderChipSabor(ii, true)).join('')}
       </div>
     `;
-  } else {
-    corpo.innerHTML = `<div class="modal-secao-label">Sem personalização — só ajuste a quantidade.</div>`;
   }
 
+  // Observação livre — disponível em TODO tipo de item (ex: "com gelo e limão", "só gelo")
+  const valorObsAnterior = document.getElementById('modal-observacao-extra')?.value || '';
+  htmlEspecifico += `
+    <div class="modal-secao-label">Observação (opcional)</div>
+    <textarea id="modal-observacao-extra" rows="2" placeholder="Ex: com gelo e limão, só gelo, cortar ao meio...">${valorObsAnterior}</textarea>
+  `;
+
+  corpo.innerHTML = htmlEspecifico;
   atualizarTotalModal();
 }
 
@@ -325,11 +330,12 @@ function confirmarAdicaoAoCarrinho() {
   let observacao = null;
   let sabores = [];
 
+  const obsExtra = document.getElementById('modal-observacao-extra')?.value.trim();
+
   if (item.tipo_montagem === 'fixo') {
     const nomesRemovidos = item.item_ingredientes
       .filter(ii => estado.ingredientesRemovidos.includes(ii.ingredientes.id))
       .map(ii => ii.ingredientes.nome);
-    const obsExtra = document.getElementById('modal-observacao-extra')?.value.trim();
     const partes = [];
     if (nomesRemovidos.length) partes.push('Sem ' + nomesRemovidos.join(', '));
     if (obsExtra) partes.push(obsExtra);
@@ -346,6 +352,7 @@ function confirmarAdicaoAoCarrinho() {
       if (foiAcrescimo) precoUnitario += ii.preco_acrescimo;
       return { id, nome: ii.ingredientes.nome, foiAcrescimo, precoAcrescimo: foiAcrescimo ? ii.preco_acrescimo : 0 };
     });
+    observacao = obsExtra || null;
 
   } else if (item.tipo_montagem === 'escolha_um') {
     if (estado.selecaoSabores.length === 0) {
@@ -355,6 +362,11 @@ function confirmarAdicaoAoCarrinho() {
     const id = estado.selecaoSabores[0];
     const ii = item.item_ingredientes.find(x => x.ingredientes.id === id);
     sabores = [{ id, nome: ii.ingredientes.nome, foiAcrescimo: false, precoAcrescimo: 0 }];
+    observacao = obsExtra || null;
+
+  } else {
+    // venda_direta
+    observacao = obsExtra || null;
   }
 
   adicionarAoCarrinho({ item, precoUnitario, observacao, sabores });
