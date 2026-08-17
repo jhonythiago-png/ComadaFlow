@@ -105,7 +105,7 @@ function encontrarItem(itemId) {
 async function carregarComandasAbertas() {
   const { data, error } = await supabaseClient
     .from('comandas')
-    .select('id, numero_sequencial, tipo, numero_mesa, nome_cliente')
+    .select('id, numero_sequencial, tipo, numero_mesa, nome_cliente, identificador_pessoa')
     .eq('estabelecimento_id', estado.perfil.estabelecimento_id)
     .eq('status', 'aberta')
     .order('aberta_em', { ascending: false });
@@ -120,16 +120,23 @@ async function carregarComandasAbertas() {
 
   lista.innerHTML = data.map(c => `
     <button class="comanda-card" onclick="selecionarComanda('${c.id}')">
-      <span class="badge">${c.tipo === 'mesa' ? 'Mesa ' + c.numero_mesa : (c.nome_cliente || 'Balcão')}</span>
+      <span class="badge">${rotuloComanda(c)}</span>
       <span class="numero">#${c.numero_sequencial}</span>
     </button>
   `).join('');
 }
 
+function rotuloComanda(c) {
+  if (c.tipo === 'mesa') {
+    return c.identificador_pessoa ? `Mesa ${c.numero_mesa} · ${c.identificador_pessoa}` : `Mesa ${c.numero_mesa}`;
+  }
+  return c.nome_cliente || 'Balcão';
+}
+
 async function selecionarComanda(comandaId) {
   const { data, error } = await supabaseClient
     .from('comandas')
-    .select('id, numero_sequencial, tipo, numero_mesa, nome_cliente')
+    .select('id, numero_sequencial, tipo, numero_mesa, nome_cliente, identificador_pessoa')
     .eq('id', comandaId)
     .single();
 
@@ -142,8 +149,9 @@ async function selecionarComanda(comandaId) {
 
 async function abrirNovaComandaMesa() {
   const numeroMesa = document.getElementById('input-numero-mesa').value.trim();
+  const pessoa = document.getElementById('input-pessoa-mesa').value.trim();
   if (!numeroMesa) { mostrarToast('Digite o número da mesa.', 'erro'); return; }
-  await criarComanda({ tipo: 'mesa', numero_mesa: numeroMesa });
+  await criarComanda({ tipo: 'mesa', numero_mesa: numeroMesa, identificador_pessoa: pessoa || null });
 }
 
 async function abrirNovaComandaAvulsa() {
@@ -180,8 +188,7 @@ function mostrarTelaCardapio() {
   document.getElementById('tela-cardapio').style.display = 'flex';
 
   const c = estado.comandaAtual;
-  document.getElementById('titulo-comanda').textContent =
-    c.tipo === 'mesa' ? `Mesa ${c.numero_mesa}` : (c.nome_cliente || 'Comanda avulsa');
+  document.getElementById('titulo-comanda').textContent = rotuloComanda(c);
   document.getElementById('codigo-comanda').textContent = `COMANDA #${c.numero_sequencial}`;
 
   renderCarrinho();
