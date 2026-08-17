@@ -124,6 +124,17 @@
   #modal-total { font-family: var(--font-display); font-weight: 800; font-size: 20px; }
   #modal-footer button { flex-shrink: 0; }
   .modal-fechar { position: absolute; top: 16px; right: 16px; font-size: 20px; color: var(--text-muted); }
+
+  /* Em telas maiores (notebook/tablet), o modal abre centralizado, não como bottom-sheet */
+  @media (min-width: 768px) {
+    #modal-overlay { align-items: center; }
+    #modal-conteudo {
+      border-radius: var(--radius-lg);
+      max-width: 480px;
+      width: 90%;
+      max-height: 80vh;
+    }
+  }
 </style>
 </head>
 <body>
