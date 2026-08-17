@@ -517,4 +517,69 @@ async function enviarPedido() {
   }
 }
 
+// ------------------------------------------------------------
+// Pedidos já enviados (prévia do que vai sair no cupom da cozinha)
+// ------------------------------------------------------------
+async function abrirPedidosEnviados() {
+  document.getElementById('modal-pedidos-overlay').style.display = 'flex';
+  const lista = document.getElementById('lista-pedidos-enviados');
+  lista.innerHTML = '<div class="aviso-vazio">Carregando...</div>';
+
+  const [{ data: itens, error: erroItens }, { data: obsGerais, error: erroObs }] = await Promise.all([
+    supabaseClient
+      .from('pedido_itens')
+      .select(`
+        id, quantidade, preco_unitario_calculado, observacao, status, criado_em,
+        itens_cardapio ( nome ),
+        pedido_item_ingredientes ( foi_acrescimo, ingredientes ( nome ) )
+      `)
+      .eq('comanda_id', estado.comandaAtual.id)
+      .neq('status', 'cancelado')
+      .order('criado_em', { ascending: true }),
+    supabaseClient
+      .from('comanda_observacoes')
+      .select('id, texto, status, criado_em')
+      .eq('comanda_id', estado.comandaAtual.id)
+      .order('criado_em', { ascending: true }),
+  ]);
+
+  if (erroItens || erroObs) {
+    lista.innerHTML = '<div class="aviso-vazio">Erro ao carregar pedidos.</div>';
+    console.error(erroItens || erroObs);
+    return;
+  }
+
+  if ((!itens || itens.length === 0) && (!obsGerais || obsGerais.length === 0)) {
+    lista.innerHTML = '<div class="aviso-vazio">Nenhum pedido enviado ainda pra essa comanda.</div>';
+    return;
+  }
+
+  const htmlItens = (itens || []).map(pi => {
+    const sabores = pi.pedido_item_ingredientes.map(s => s.ingredientes.nome).join(', ');
+    const horario = new Date(pi.criado_em).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+    return `
+      <div class="pedido-enviado-linha">
+        <div class="linha-topo">
+          <span>${pi.quantidade}× ${pi.itens_cardapio.nome}</span>
+          <span>R$ ${(pi.preco_unitario_calculado * pi.quantidade).toFixed(2).replace('.', ',')}</span>
+        </div>
+        ${sabores ? `<div class="linha-detalhe">${sabores}</div>` : ''}
+        ${pi.observacao ? `<div class="linha-detalhe">${pi.observacao}</div>` : ''}
+        <div class="linha-detalhe">${horario}</div>
+        <span class="linha-status">${pi.status}</span>
+      </div>
+    `;
+  }).join('');
+
+  const htmlObs = (obsGerais || []).map(o => `
+    <div class="obs-geral-enviada">📝 ${o.texto}</div>
+  `).join('');
+
+  lista.innerHTML = htmlItens + htmlObs;
+}
+
+function fecharPedidosEnviados() {
+  document.getElementById('modal-pedidos-overlay').style.display = 'none';
+}
+
 iniciar();
