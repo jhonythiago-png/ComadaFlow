@@ -143,13 +143,37 @@
 
   /* Em telas maiores (notebook/tablet), o modal abre centralizado, não como bottom-sheet */
   @media (min-width: 768px) {
-    #modal-overlay { align-items: center; }
-    #modal-conteudo {
+    #modal-overlay, #modal-pedidos-overlay { align-items: center; }
+    #modal-conteudo, #modal-pedidos-conteudo {
       border-radius: var(--radius-lg);
       max-width: 480px;
       width: 90%;
       max-height: 80vh;
     }
+  }
+
+  /* ---- Modal: pedidos enviados (prévia do cupom) ---- */
+  #modal-pedidos-overlay {
+    display: none; position: fixed; inset: 0; background: rgba(0,0,0,.6);
+    align-items: flex-end; justify-content: center; z-index: 100;
+  }
+  #modal-pedidos-conteudo {
+    position: relative;
+    background: var(--ink); width: 100%; max-width: 480px; border-radius: 20px 20px 0 0;
+    padding: 20px 18px calc(20px + env(safe-area-inset-bottom)); max-height: 85dvh;
+    display: flex; flex-direction: column; overflow-y: auto;
+  }
+  .pedido-enviado-linha {
+    border-bottom: 1px dashed var(--ink-line); padding: 10px 0; font-family: var(--font-mono); font-size: 12.5px;
+  }
+  .pedido-enviado-linha .linha-topo { display: flex; justify-content: space-between; color: var(--text-primary); font-weight: 600; }
+  .pedido-enviado-linha .linha-detalhe { color: var(--text-muted); margin-top: 3px; }
+  .pedido-enviado-linha .linha-status {
+    display: inline-block; margin-top: 4px; font-size: 10px; text-transform: uppercase;
+    padding: 2px 6px; border-radius: 4px; background: rgba(92,122,82,.18); color: #9CBF8F;
+  }
+  .obs-geral-enviada {
+    font-family: var(--font-mono); font-size: 12.5px; color: var(--crust); padding: 8px 0; border-bottom: 1px dashed var(--ink-line);
   }
 </style>
 </head>
@@ -198,7 +222,7 @@
       <div id="codigo-comanda">COMANDA #—</div>
       <div id="titulo-comanda">—</div>
     </div>
-    <div style="width:20px;"></div>
+    <button class="voltar" onclick="abrirPedidosEnviados()" title="Ver pedidos já enviados">📋</button>
   </div>
 
   <div id="nav-categorias"></div>
@@ -235,6 +259,15 @@
       <span id="modal-total">R$ 0,00</span>
       <button class="btn-primary" style="flex:1;" onclick="confirmarAdicaoAoCarrinho()">Adicionar ao pedido</button>
     </div>
+  </div>
+</div>
+
+<!-- MODAL: pedidos já enviados (prévia do que sai no cupom da cozinha) -->
+<div id="modal-pedidos-overlay">
+  <div id="modal-pedidos-conteudo">
+    <button class="modal-fechar" onclick="fecharPedidosEnviados()">✕</button>
+    <div class="modal-secao-label" style="margin-top:0;">Pedidos enviados pra cozinha</div>
+    <div id="lista-pedidos-enviados"><div class="aviso-vazio">Carregando...</div></div>
   </div>
 </div>
 
