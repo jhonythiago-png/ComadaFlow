@@ -12,6 +12,7 @@ const estado = {
   itemEmEdicao: null,          // item sendo montado no modal agora
   selecaoSabores: [],          // ordem de seleção de sabores no modal (pro cálculo de cota)
   ingredientesRemovidos: [],   // ids removidos de um item 'fixo' no modal
+  observacaoAtual: '',          // texto da observação do item sendo montado agora (reseta a cada item novo)
 };
 
 // ------------------------------------------------------------
@@ -25,6 +26,46 @@ async function iniciar() {
 
   await carregarCardapio();
   await carregarComandasAbertas();
+  escutarMudancasComandas();
+}
+
+/**
+ * Fica ouvindo mudanças na tabela "comandas" em tempo real —
+ * assim, quando o caixa fecha uma conta, ela some da lista sozinha,
+ * sem precisar dar F5 nem deslogar/logar de novo.
+ */
+function escutarMudancasComandas() {
+  supabaseClient
+    .channel('comandas_mudancas')
+    .on(
+      'postgres_changes',
+      {
+        event: '*',
+        schema: 'public',
+        table: 'comandas',
+        filter: `estabelecimento_id=eq.${estado.perfil.estabelecimento_id}`,
+      },
+      (payload) => {
+        // Se a comanda que mudou é a que o atendente está usando agora, e ela fechou,
+        // avisa e volta pra lista automaticamente
+        if (
+          estado.comandaAtual &&
+          payload.new?.id === estado.comandaAtual.id &&
+          payload.new?.status === 'fechada'
+        ) {
+          mostrarToast('Essa comanda foi fechada pelo caixa.');
+          voltarParaComandas();
+          return;
+        }
+
+        // Se estiver na tela de lista (escolhendo comanda), atualiza a lista sozinha
+        const telaSelecao = document.getElementById('tela-selecao-comanda');
+        if (telaSelecao.style.display !== 'none') {
+          carregarComandasAbertas();
+        }
+      }
+    )
+    .subscribe();
 }
 
 // ------------------------------------------------------------
@@ -212,6 +253,7 @@ function abrirModalItem(itemId) {
   estado.itemEmEdicao = item;
   estado.selecaoSabores = [];
   estado.ingredientesRemovidos = [];
+  estado.observacaoAtual = '';
 
   document.getElementById('modal-item-nome').textContent = item.nome;
   document.getElementById('modal-item-preco-base').textContent = `R$ ${item.preco_base.toFixed(2).replace('.', ',')}`;
@@ -262,10 +304,12 @@ function renderCorpoModal() {
   }
 
   // Observação livre — disponível em TODO tipo de item (ex: "com gelo e limão", "só gelo")
-  const valorObsAnterior = document.getElementById('modal-observacao-extra')?.value || '';
+  // Usa estado.observacaoAtual (não lê da tela) — evita "vazar" texto de um item pro outro
   htmlEspecifico += `
     <div class="modal-secao-label">Observação (opcional)</div>
-    <textarea id="modal-observacao-extra" rows="2" placeholder="Ex: com gelo e limão, só gelo, cortar ao meio...">${valorObsAnterior}</textarea>
+    <textarea id="modal-observacao-extra" rows="2"
+      oninput="estado.observacaoAtual = this.value"
+      placeholder="Ex: com gelo e limão, só gelo, cortar ao meio...">${estado.observacaoAtual}</textarea>
   `;
 
   corpo.innerHTML = htmlEspecifico;
@@ -331,7 +375,7 @@ function confirmarAdicaoAoCarrinho() {
   let observacao = null;
   let sabores = [];
 
-  const obsExtra = document.getElementById('modal-observacao-extra')?.value.trim();
+  const obsExtra = (estado.observacaoAtual || '').trim();
 
   if (item.tipo_montagem === 'fixo') {
     const nomesRemovidos = item.item_ingredientes
