@@ -171,8 +171,8 @@ function renderFechamento() {
     `;
   }).join('');
 
-  document.getElementById('input-taxa-servico').value = estado.taxaServicoPercentual;
-  document.getElementById('input-taxa-entrega').value = estado.taxaEntregaValor;
+  document.getElementById('input-taxa-servico').value = estado.taxaServicoPercentual.toString().replace('.', ',');
+  document.getElementById('input-taxa-entrega').value = estado.taxaEntregaValor.toString().replace('.', ',');
 
   document.getElementById('valor-subtotal').textContent = `R$ ${subtotal.toFixed(2).replace('.', ',')}`;
   document.getElementById('valor-taxa-servico').textContent = `R$ ${taxaValor.toFixed(2).replace('.', ',')}`;
@@ -181,14 +181,30 @@ function renderFechamento() {
   renderPagamentos();
 }
 
+/** Converte texto digitado (aceita vírgula ou ponto) pra número */
+function paraNumero(texto) {
+  if (typeof texto !== 'string') return Number(texto) || 0;
+  return parseFloat(texto.replace(',', '.')) || 0;
+}
+
 function atualizarTaxaServico(valor) {
-  estado.taxaServicoPercentual = parseFloat(valor) || 0;
-  renderFechamento();
+  estado.taxaServicoPercentual = paraNumero(valor);
+  atualizarResumoValores();
 }
 
 function atualizarTaxaEntrega(valor) {
-  estado.taxaEntregaValor = parseFloat(valor) || 0;
-  renderFechamento();
+  estado.taxaEntregaValor = paraNumero(valor);
+  atualizarResumoValores();
+}
+
+/** Recalcula só os valores exibidos (subtotal/taxa/total) — não mexe
+ * nos campos de input, pra não atrapalhar quem está digitando */
+function atualizarResumoValores() {
+  const { subtotal, taxaValor, total } = calcularValores();
+  document.getElementById('valor-subtotal').textContent = `R$ ${subtotal.toFixed(2).replace('.', ',')}`;
+  document.getElementById('valor-taxa-servico').textContent = `R$ ${taxaValor.toFixed(2).replace('.', ',')}`;
+  document.getElementById('valor-total').textContent = `R$ ${total.toFixed(2).replace('.', ',')}`;
+  renderResumoPagamento();
 }
 
 // ------------------------------------------------------------
@@ -213,7 +229,7 @@ function atualizarFormaPagamento(index, forma) {
 }
 
 function atualizarValorPagamento(index, valor) {
-  estado.pagamentos[index].valor = parseFloat(valor) || 0;
+  estado.pagamentos[index].valor = paraNumero(valor);
   renderResumoPagamento();
 }
 
@@ -231,7 +247,7 @@ function renderPagamentos() {
           <option value="credito" ${p.forma === 'credito' ? 'selected' : ''}>Cartão Crédito</option>
           <option value="pix" ${p.forma === 'pix' ? 'selected' : ''}>Pix</option>
         </select>
-        <input type="number" step="0.01" value="${p.valor}" oninput="atualizarValorPagamento(${i}, this.value)">
+        <input type="text" inputmode="decimal" value="${p.valor.toString().replace('.', ',')}" oninput="atualizarValorPagamento(${i}, this.value)">
         <button class="btn-remover" onclick="removerPagamento(${i})">✕</button>
       </div>
     `).join('');
