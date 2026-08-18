@@ -46,6 +46,8 @@ function escutarMudancasComandas() {
         filter: `estabelecimento_id=eq.${estado.perfil.estabelecimento_id}`,
       },
       (payload) => {
+        console.log('[Realtime] comandas mudou:', payload);
+
         // Se a comanda que mudou é a que o atendente está usando agora, e ela fechou,
         // avisa e volta pra lista automaticamente
         if (
@@ -65,7 +67,9 @@ function escutarMudancasComandas() {
         }
       }
     )
-    .subscribe();
+    .subscribe((status) => {
+      console.log('[Realtime] status da inscrição em "comandas":', status);
+    });
 }
 
 // ------------------------------------------------------------
