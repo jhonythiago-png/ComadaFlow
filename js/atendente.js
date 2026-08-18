@@ -43,10 +43,17 @@ function escutarMudancasComandas() {
         event: '*',
         schema: 'public',
         table: 'comandas',
-        filter: `estabelecimento_id=eq.${estado.perfil.estabelecimento_id}`,
       },
       (payload) => {
         console.log('[Realtime] comandas mudou:', payload);
+
+        // Como tiramos o filtro do servidor, confirma aqui no código
+        // que a mudança é do MESMO estabelecimento (importante quando
+        // existirem outros clientes usando o ComandaFlow no futuro)
+        const linhaMudada = payload.new?.estabelecimento_id ? payload.new : payload.old;
+        if (linhaMudada?.estabelecimento_id !== estado.perfil.estabelecimento_id) {
+          return;
+        }
 
         // Se a comanda que mudou é a que o atendente está usando agora, e ela fechou,
         // avisa e volta pra lista automaticamente
