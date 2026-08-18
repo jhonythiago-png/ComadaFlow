@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#17140F">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="ComandaFlow">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<title>ComandaFlow — Master</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<link rel="stylesheet" href="css/tokens.css">
+<style>
+  html { height: 100%; }
+  body { min-height: 100vh; min-height: 100dvh; }
+
+  .topbar {
+    padding: calc(14px + env(safe-area-inset-top)) 28px 14px;
+    display: flex; justify-content: space-between; align-items: center;
+    border-bottom: 1px solid var(--ink-line);
+  }
+  .topbar .brand { font-family: var(--font-display); font-weight: 800; font-size: 16px; color: var(--crust); }
+  .topbar .usuario { font-size: 12px; color: var(--text-muted); }
+  .topbar .usuario button { color: var(--paprika); font-size: 12px; margin-left: 8px; text-decoration: underline; }
+
+  .conteudo {
+    padding: 24px 20px calc(48px + env(safe-area-inset-bottom));
+    max-width: 780px; width: 100%; margin: 0 auto; box-sizing: border-box;
+  }
+  @media (min-width: 900px) {
+    .conteudo { max-width: 900px; padding: 32px 40px 60px; }
+  }
+
+  .abas { display: flex; gap: 8px; margin-bottom: 20px; }
+  .aba-botao {
+    padding: 10px 18px; border-radius: 20px; border: 1px solid var(--ink-line);
+    background: var(--ink-soft); color: var(--text-muted); font-size: 13px; font-weight: 600;
+  }
+  .aba-botao.on { background: var(--crust); color: var(--ink); border-color: var(--crust); }
+
+  .painel {
+    background: var(--ink-soft); border: 1px solid var(--ink-line); border-radius: var(--radius-lg);
+    padding: 20px 22px; margin-bottom: 20px;
+  }
+  .painel-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+  .painel-header h3 { font-family: var(--font-display); font-size: 16px; font-weight: 700; }
+
+  /* ---- Funcionários ---- */
+  .funcionario-linha {
+    display: flex; justify-content: space-between; align-items: center;
+    background: var(--ink); border: 1px solid var(--ink-line); border-radius: var(--radius-sm);
+    padding: 13px 16px; margin-bottom: 8px; gap: 10px; flex-wrap: wrap;
+  }
+  .funcionario-linha:last-child { margin-bottom: 0; }
+  .funcionario-nome { font-size: 13.5px; font-weight: 600; }
+  .badge-master {
+    font-family: var(--font-mono); font-size: 9px; background: var(--crust); color: var(--ink);
+    padding: 2px 6px; border-radius: 4px; margin-left: 6px; vertical-align: middle;
+  }
+  .funcionario-detalhe { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+  .funcionario-direita { display: flex; align-items: center; gap: 12px; }
+  .funcionario-status { font-size: 10px; text-transform: uppercase; padding: 3px 9px; border-radius: 4px; font-weight: 700; }
+  .funcionario-status.ativo { background: rgba(92,122,82,.18); color: #9CBF8F; }
+  .funcionario-status.inativo { background: rgba(214,67,42,.14); color: #F0A08D; }
+  .btn-toggle-status { font-size: 11px; color: var(--crust); text-decoration: underline; white-space: nowrap; }
+
+  .btn-novo-func { padding: 9px 18px; width: auto; }
+
+  /* ---- Configurações ---- */
+  .config-nome { font-size: 13px; color: var(--text-muted); margin-bottom: 18px; }
+  .campo { margin-bottom: 16px; }
+  .campo label { display: block; font-size: 12px; color: var(--text-muted); margin-bottom: 6px; }
+  .campo-checkbox { display: flex; align-items: center; gap: 8px; margin-bottom: 16px; }
+  .campo-checkbox input { width: auto; }
+
+  /* ---- Modal funcionário ---- */
+  #modal-funcionario-overlay {
+    display: none; position: fixed; inset: 0; background: rgba(0,0,0,.6);
+    align-items: center; justify-content: center; z-index: 100; padding: 20px;
+  }
+  #modal-funcionario-conteudo {
+    background: var(--ink); border-radius: var(--radius-lg); padding: 22px;
+    width: 100%; max-width: 400px;
+  }
+  #modal-funcionario-conteudo h3 { font-family: var(--font-display); margin-bottom: 16px; }
+  .modal-botoes { display: flex; gap: 10px; margin-top: 8px; }
+  .modal-botoes button { flex: 1; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <span class="brand">ComandaFlow · Master</span>
+  <span class="usuario">
+    <span id="nome-usuario">—</span>
+    <button onclick="fazerLogout()">saír</button>
+  </span>
+</div>
+
+<div class="conteudo">
+
+  <div class="abas">
+    <button class="aba-botao on" id="botao-aba-funcionarios" onclick="mostrarAba('funcionarios')">Funcionários</button>
+    <button class="aba-botao" id="botao-aba-configuracoes" onclick="mostrarAba('configuracoes')">Configurações</button>
+  </div>
+
+  <!-- ABA: Funcionários -->
+  <div class="aba-conteudo" id="aba-funcionarios">
+    <div class="painel">
+      <div class="painel-header">
+        <h3>Funcionários</h3>
+        <button class="btn-primary btn-novo-func" onclick="abrirModalFuncionario()">+ Novo funcionário</button>
+      </div>
+      <div id="lista-funcionarios"></div>
+    </div>
+  </div>
+
+  <!-- ABA: Configurações -->
+  <div class="aba-conteudo" id="aba-configuracoes" style="display:none;">
+    <div class="painel">
+      <div class="painel-header"><h3>Configurações do estabelecimento</h3></div>
+      <div class="config-nome" id="config-nome-estabelecimento">—</div>
+
+      <div class="campo">
+        <label>Modo de atendimento</label>
+        <select id="input-modo-atendimento">
+          <option value="mesa">Só mesa numerada</option>
+          <option value="comanda_avulsa">Só comanda avulsa (balcão)</option>
+          <option value="ambos">Mesa + comanda avulsa</option>
+        </select>
+      </div>
+
+      <div class="campo-checkbox">
+        <input type="checkbox" id="input-permite-entrega">
+        <label for="input-permite-entrega" style="margin:0;">Permite pedidos de entrega</label>
+      </div>
+
+      <div class="campo">
+        <label>Taxa de serviço padrão (%)</label>
+        <input type="text" inputmode="decimal" id="input-taxa-padrao" placeholder="10">
+      </div>
+
+      <button class="btn-primary" onclick="salvarConfiguracoes()">Salvar configurações</button>
+    </div>
+  </div>
+
+</div>
+
+<!-- MODAL: novo funcionário -->
+<div id="modal-funcionario-overlay">
+  <div id="modal-funcionario-conteudo">
+    <h3>Novo funcionário</h3>
+
+    <div class="campo">
+      <label>Nome</label>
+      <input type="text" id="input-func-nome" placeholder="Ex: Maria Silva">
+    </div>
+    <div class="campo">
+      <label>Usuário (pra login)</label>
+      <input type="text" id="input-func-username" placeholder="Ex: maria" autocapitalize="none">
+    </div>
+    <div class="campo">
+      <label>Senha</label>
+      <input type="password" id="input-func-senha" placeholder="Mínimo 6 caracteres">
+    </div>
+
+    <div class="modal-botoes">
+      <button class="btn-ghost" onclick="fecharModalFuncionario()">Cancelar</button>
+      <button class="btn-primary" id="btn-salvar-funcionario" onclick="salvarNovoFuncionario()">Criar funcionário</button>
+    </div>
+  </div>
+</div>
+
+<script src="js/supabase-client.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/master.js"></script>
+</body>
+</html>
