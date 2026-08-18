@@ -268,6 +268,11 @@ function mostrarTelaCardapio() {
   document.getElementById('tela-selecao-comanda').style.display = 'none';
   document.getElementById('tela-cardapio').style.display = 'flex';
 
+  // Garante que nada da comanda anterior "vaza" pra essa (carrinho e obs gerais)
+  estado.observacoesGerais = [];
+  const inputObsGeral = document.getElementById('input-obs-geral');
+  if (inputObsGeral) inputObsGeral.value = '';
+
   const c = estado.comandaAtual;
   document.getElementById('titulo-comanda').textContent = rotuloComanda(c);
   document.getElementById('codigo-comanda').textContent = `COMANDA #${c.numero_sequencial}`;
