@@ -124,9 +124,11 @@ form.addEventListener('submit', async (e) => {
 
     sessionStorage.setItem('comandaflow_perfil', JSON.stringify(perfil));
 
-    // Por enquanto todo mundo cai no app do atendente
-    // (quando caixa.html e master.html existirem, redirecionamos por nível de acesso)
-    window.location.href = 'atendente.html';
+    // Volta pra página que a pessoa tentou acessar antes do login
+    // (ex: se tentou abrir caixa.html direto, volta pra lá — senão, vai pro atendente)
+    const parametros = new URLSearchParams(window.location.search);
+    const destino = parametros.get('redirect') || 'atendente.html';
+    window.location.href = destino;
 
   } catch (erro) {
     mensagemErro.textContent = 'Erro ao conectar. Verifique sua internet.';
