@@ -16,7 +16,9 @@ async function verificarAutenticacao() {
 
   const { data: sessao } = await supabaseClient.auth.getSession();
   if (!sessao?.session) {
-    window.location.href = 'index.html';
+    // Lembra a página que a pessoa tentou acessar, pra voltar pra ela depois do login
+    const paginaAtual = window.location.pathname.split('/').pop();
+    window.location.href = `index.html?redirect=${encodeURIComponent(paginaAtual)}`;
     return null;
   }
 
