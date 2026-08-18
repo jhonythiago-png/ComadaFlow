@@ -16,76 +16,113 @@
 <link rel="stylesheet" href="css/tokens.css">
 <style>
   html { height: 100%; }
-  body { display: flex; flex-direction: column; min-height: 100vh; min-height: 100dvh; }
+  body { min-height: 100vh; min-height: 100dvh; }
 
   .topbar {
-    padding: calc(14px + env(safe-area-inset-top)) 20px 14px;
+    padding: calc(14px + env(safe-area-inset-top)) 28px 14px;
     display: flex; justify-content: space-between; align-items: center;
-    border-bottom: 1px solid var(--ink-line); flex-shrink: 0;
+    border-bottom: 1px solid var(--ink-line);
   }
   .topbar .brand { font-family: var(--font-display); font-weight: 800; font-size: 16px; color: var(--crust); }
   .topbar .usuario { font-size: 12px; color: var(--text-muted); }
   .topbar .usuario button { color: var(--paprika); font-size: 12px; margin-left: 8px; text-decoration: underline; }
 
-  .conteudo { flex: 1; overflow-y: auto; padding: 20px 20px calc(40px + env(safe-area-inset-bottom)); max-width: 900px; width: 100%; margin: 0 auto; box-sizing: border-box; }
+  .conteudo {
+    padding: 24px 20px calc(48px + env(safe-area-inset-bottom));
+    max-width: 780px; width: 100%; margin: 0 auto; box-sizing: border-box;
+  }
+
+  @media (min-width: 900px) {
+    .conteudo { max-width: 1180px; padding: 32px 40px 60px; }
+  }
 
   .secao-titulo {
-    font-family: var(--font-display); font-weight: 700; font-size: 17px;
-    margin: 28px 0 12px;
+    font-family: var(--font-display); font-weight: 700; font-size: 16px;
+    margin-bottom: 14px; display: flex; align-items: center; gap: 8px;
   }
-  .secao-titulo:first-child { margin-top: 0; }
+  .secao-titulo .tag {
+    font-family: var(--font-mono); font-size: 10px; color: var(--ink); background: var(--crust);
+    padding: 2px 7px; border-radius: 4px; letter-spacing: .04em;
+  }
+
+  .painel {
+    background: var(--ink-soft); border: 1px solid var(--ink-line); border-radius: var(--radius-lg);
+    padding: 20px 22px; margin-bottom: 20px;
+  }
 
   /* ---- Seletor de período ---- */
   .periodo-linha { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
   .periodo-chip {
-    padding: 8px 14px; border-radius: 20px; border: 1px solid var(--ink-line);
-    background: var(--ink-soft); color: var(--text-muted); font-size: 13px; font-weight: 600;
+    padding: 9px 16px; border-radius: 20px; border: 1px solid var(--ink-line);
+    background: var(--ink); color: var(--text-muted); font-size: 13px; font-weight: 600;
   }
   .periodo-chip.on { background: var(--crust); color: var(--ink); border-color: var(--crust); }
-  #periodo-personalizado { display: none; gap: 8px; align-items: center; margin-top: 10px; }
-  #periodo-personalizado input { padding: 8px 10px; font-size: 13px; }
+  #periodo-personalizado { display: none; gap: 8px; align-items: center; margin-top: 12px; }
+  #periodo-personalizado input { padding: 9px 10px; font-size: 13px; }
 
   /* ---- Cards de resumo ---- */
-  .cards-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
-  .card-resumo { background: var(--ink-soft); border: 1px solid var(--ink-line); border-radius: var(--radius-md); padding: 16px; }
-  .card-resumo .card-label { font-family: var(--font-mono); font-size: 10px; text-transform: uppercase; color: var(--text-muted); margin-bottom: 6px; }
-  .card-valor { font-family: var(--font-display); font-weight: 800; font-size: 22px; }
+  .cards-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px; }
+  .card-resumo {
+    background: var(--ink); border: 1px solid var(--ink-line); border-radius: var(--radius-md);
+    padding: 18px 20px; position: relative; overflow: hidden;
+  }
+  .card-resumo::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: var(--ink-line);
+  }
+  .card-resumo.destaque::before { background: var(--crust); }
+  .card-resumo .card-label {
+    font-family: var(--font-mono); font-size: 10.5px; text-transform: uppercase;
+    color: var(--text-muted); margin-bottom: 8px; letter-spacing: .04em;
+  }
+  .card-valor { font-family: var(--font-display); font-weight: 800; font-size: 26px; }
   .card-valor.positivo { color: var(--ok); }
   .card-valor.negativo { color: var(--paprika); }
 
+  /* ---- Grid de 2 colunas (relatórios lado a lado no desktop) ---- */
+  .grid-relatorios { display: grid; grid-template-columns: 1fr; gap: 20px; }
+  @media (min-width: 900px) {
+    .grid-relatorios { grid-template-columns: 1fr 1fr; align-items: start; }
+  }
+
   /* ---- Pagamentos por forma ---- */
-  .forma-linha { margin-bottom: 12px; }
-  .forma-topo { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 4px; }
-  .forma-barra-fundo { height: 6px; background: var(--ink-line); border-radius: 3px; overflow: hidden; }
-  .forma-barra { height: 100%; background: var(--crust); }
+  .forma-linha { margin-bottom: 14px; }
+  .forma-linha:last-child { margin-bottom: 0; }
+  .forma-topo { display: flex; justify-content: space-between; font-size: 13.5px; margin-bottom: 6px; }
+  .forma-topo span:last-child { font-family: var(--font-mono); color: var(--crust); font-weight: 600; }
+  .forma-barra-fundo { height: 7px; background: var(--ink); border-radius: 4px; overflow: hidden; }
+  .forma-barra { height: 100%; background: var(--crust); border-radius: 4px; }
 
   /* ---- Produtos mais vendidos ---- */
   .produto-linha {
-    display: grid; grid-template-columns: 28px 1fr 50px 80px; gap: 10px; align-items: center;
-    padding: 8px 0; border-bottom: 1px solid var(--ink-line); font-size: 13px;
+    display: grid; grid-template-columns: 24px 1fr 44px 76px; gap: 10px; align-items: center;
+    padding: 9px 0; border-bottom: 1px solid var(--ink-line); font-size: 13px;
   }
-  .produto-linha:last-child { border-bottom: none; }
-  .produto-posicao { color: var(--crust); font-family: var(--font-mono); font-weight: 700; }
-  .produto-qtd { font-family: var(--font-mono); color: var(--text-muted); text-align: right; }
-  .produto-receita { font-family: var(--font-mono); color: var(--crust); text-align: right; }
+  .produto-linha:last-child { border-bottom: none; padding-bottom: 0; }
+  .produto-linha:first-child { padding-top: 0; }
+  .produto-posicao { color: var(--crust); font-family: var(--font-mono); font-weight: 700; font-size: 12px; }
+  .produto-qtd { font-family: var(--font-mono); color: var(--text-muted); text-align: right; font-size: 12px; }
+  .produto-receita { font-family: var(--font-mono); color: var(--crust); text-align: right; font-size: 12.5px; }
 
   /* ---- Despesas ---- */
+  .despesas-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+  .despesas-header .secao-titulo { margin-bottom: 0; }
   .despesa-linha {
     display: flex; justify-content: space-between; align-items: center;
-    background: var(--ink-soft); border: 1px solid var(--ink-line); border-radius: var(--radius-sm);
-    padding: 12px 14px; margin-bottom: 8px; gap: 10px; flex-wrap: wrap;
+    background: var(--ink); border: 1px solid var(--ink-line); border-radius: var(--radius-sm);
+    padding: 13px 16px; margin-bottom: 8px; gap: 10px; flex-wrap: wrap;
   }
-  .despesa-descricao { font-size: 13px; font-weight: 600; }
+  .despesa-linha:last-child { margin-bottom: 0; }
+  .despesa-descricao { font-size: 13.5px; font-weight: 600; }
   .despesa-detalhe { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
-  .despesa-direita { display: flex; align-items: center; gap: 10px; }
-  .despesa-valor { font-family: var(--font-mono); font-size: 13px; }
-  .despesa-status { font-size: 10px; text-transform: uppercase; padding: 2px 8px; border-radius: 4px; font-weight: 700; }
+  .despesa-direita { display: flex; align-items: center; gap: 12px; }
+  .despesa-valor { font-family: var(--font-mono); font-size: 13.5px; }
+  .despesa-status { font-size: 10px; text-transform: uppercase; padding: 3px 9px; border-radius: 4px; font-weight: 700; }
   .despesa-status.pago { background: rgba(92,122,82,.18); color: #9CBF8F; }
   .despesa-status.pendente { background: rgba(214,67,42,.14); color: #F0A08D; }
-  .btn-marcar-pago { font-size: 11px; color: var(--crust); text-decoration: underline; }
+  .btn-marcar-pago { font-size: 11px; color: var(--crust); text-decoration: underline; white-space: nowrap; }
 
-  .btn-nova-despesa { margin-top: 8px; }
-  .aviso-vazio-pequeno { color: var(--text-faint); font-size: 13px; padding: 12px 0; }
+  .btn-nova-despesa { padding: 9px 18px; width: auto; }
+  .aviso-vazio-pequeno { color: var(--text-faint); font-size: 13px; padding: 4px 0; }
 
   /* ---- Modal despesa ---- */
   #modal-despesa-overlay {
@@ -117,22 +154,24 @@
 
 <div class="conteudo">
 
-  <div class="secao-titulo">Período</div>
-  <div class="periodo-linha">
-    <button class="periodo-chip on" id="chip-hoje" onclick="selecionarPeriodo('hoje')">Hoje</button>
-    <button class="periodo-chip" id="chip-semana" onclick="selecionarPeriodo('semana')">Últimos 7 dias</button>
-    <button class="periodo-chip" id="chip-mes" onclick="selecionarPeriodo('mes')">Este mês</button>
-    <button class="periodo-chip" id="chip-personalizado" onclick="mostrarPeriodoPersonalizado()">Personalizado</button>
-  </div>
-  <div id="periodo-personalizado">
-    <input type="date" id="input-data-inicio" onchange="atualizarPeriodoPersonalizado()">
-    <span style="color:var(--text-muted);">até</span>
-    <input type="date" id="input-data-fim" onchange="atualizarPeriodoPersonalizado()">
+  <div class="painel">
+    <div class="secao-titulo"><span class="tag">01</span> Período</div>
+    <div class="periodo-linha">
+      <button class="periodo-chip on" id="chip-hoje" onclick="selecionarPeriodo('hoje')">Hoje</button>
+      <button class="periodo-chip" id="chip-semana" onclick="selecionarPeriodo('semana')">Últimos 7 dias</button>
+      <button class="periodo-chip" id="chip-mes" onclick="selecionarPeriodo('mes')">Este mês</button>
+      <button class="periodo-chip" id="chip-personalizado" onclick="mostrarPeriodoPersonalizado()">Personalizado</button>
+    </div>
+    <div id="periodo-personalizado">
+      <input type="date" id="input-data-inicio" onchange="atualizarPeriodoPersonalizado()">
+      <span style="color:var(--text-muted);">até</span>
+      <input type="date" id="input-data-fim" onchange="atualizarPeriodoPersonalizado()">
+    </div>
   </div>
 
-  <div class="secao-titulo">Resumo</div>
-  <div class="cards-grid">
-    <div class="card-resumo">
+  <div class="secao-titulo"><span class="tag">02</span> Resumo</div>
+  <div class="cards-grid" style="margin-bottom: 20px;">
+    <div class="card-resumo destaque">
       <div class="card-label">Receita</div>
       <div class="card-valor" id="card-receita">R$ 0,00</div>
     </div>
@@ -150,15 +189,25 @@
     </div>
   </div>
 
-  <div class="secao-titulo">Pagamentos por forma</div>
-  <div id="lista-pagamentos-forma"></div>
+  <div class="grid-relatorios">
+    <div class="painel">
+      <div class="secao-titulo"><span class="tag">03</span> Pagamentos por forma</div>
+      <div id="lista-pagamentos-forma"></div>
+    </div>
 
-  <div class="secao-titulo">Produtos mais vendidos</div>
-  <div id="lista-produtos-vendidos"></div>
+    <div class="painel">
+      <div class="secao-titulo"><span class="tag">04</span> Produtos mais vendidos</div>
+      <div id="lista-produtos-vendidos"></div>
+    </div>
+  </div>
 
-  <div class="secao-titulo">Despesas</div>
-  <div id="lista-despesas"></div>
-  <button class="btn-primary btn-nova-despesa" onclick="abrirModalDespesa()">+ Nova despesa</button>
+  <div class="painel">
+    <div class="despesas-header">
+      <div class="secao-titulo"><span class="tag">05</span> Despesas</div>
+      <button class="btn-primary btn-nova-despesa" onclick="abrirModalDespesa()">+ Nova despesa</button>
+    </div>
+    <div id="lista-despesas"></div>
+  </div>
 
 </div>
 
