@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#17140F">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="ComandaFlow">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<title>ComandaFlow — Financeiro</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<link rel="stylesheet" href="css/tokens.css">
+<style>
+  html { height: 100%; }
+  body { display: flex; flex-direction: column; min-height: 100vh; min-height: 100dvh; }
+
+  .topbar {
+    padding: calc(14px + env(safe-area-inset-top)) 20px 14px;
+    display: flex; justify-content: space-between; align-items: center;
+    border-bottom: 1px solid var(--ink-line); flex-shrink: 0;
+  }
+  .topbar .brand { font-family: var(--font-display); font-weight: 800; font-size: 16px; color: var(--crust); }
+  .topbar .usuario { font-size: 12px; color: var(--text-muted); }
+  .topbar .usuario button { color: var(--paprika); font-size: 12px; margin-left: 8px; text-decoration: underline; }
+
+  .conteudo { flex: 1; overflow-y: auto; padding: 20px 20px calc(40px + env(safe-area-inset-bottom)); max-width: 900px; width: 100%; margin: 0 auto; box-sizing: border-box; }
+
+  .secao-titulo {
+    font-family: var(--font-display); font-weight: 700; font-size: 17px;
+    margin: 28px 0 12px;
+  }
+  .secao-titulo:first-child { margin-top: 0; }
+
+  /* ---- Seletor de período ---- */
+  .periodo-linha { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .periodo-chip {
+    padding: 8px 14px; border-radius: 20px; border: 1px solid var(--ink-line);
+    background: var(--ink-soft); color: var(--text-muted); font-size: 13px; font-weight: 600;
+  }
+  .periodo-chip.on { background: var(--crust); color: var(--ink); border-color: var(--crust); }
+  #periodo-personalizado { display: none; gap: 8px; align-items: center; margin-top: 10px; }
+  #periodo-personalizado input { padding: 8px 10px; font-size: 13px; }
+
+  /* ---- Cards de resumo ---- */
+  .cards-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
+  .card-resumo { background: var(--ink-soft); border: 1px solid var(--ink-line); border-radius: var(--radius-md); padding: 16px; }
+  .card-resumo .card-label { font-family: var(--font-mono); font-size: 10px; text-transform: uppercase; color: var(--text-muted); margin-bottom: 6px; }
+  .card-valor { font-family: var(--font-display); font-weight: 800; font-size: 22px; }
+  .card-valor.positivo { color: var(--ok); }
+  .card-valor.negativo { color: var(--paprika); }
+
+  /* ---- Pagamentos por forma ---- */
+  .forma-linha { margin-bottom: 12px; }
+  .forma-topo { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 4px; }
+  .forma-barra-fundo { height: 6px; background: var(--ink-line); border-radius: 3px; overflow: hidden; }
+  .forma-barra { height: 100%; background: var(--crust); }
+
+  /* ---- Produtos mais vendidos ---- */
+  .produto-linha {
+    display: grid; grid-template-columns: 28px 1fr 50px 80px; gap: 10px; align-items: center;
+    padding: 8px 0; border-bottom: 1px solid var(--ink-line); font-size: 13px;
+  }
+  .produto-linha:last-child { border-bottom: none; }
+  .produto-posicao { color: var(--crust); font-family: var(--font-mono); font-weight: 700; }
+  .produto-qtd { font-family: var(--font-mono); color: var(--text-muted); text-align: right; }
+  .produto-receita { font-family: var(--font-mono); color: var(--crust); text-align: right; }
+
+  /* ---- Despesas ---- */
+  .despesa-linha {
+    display: flex; justify-content: space-between; align-items: center;
+    background: var(--ink-soft); border: 1px solid var(--ink-line); border-radius: var(--radius-sm);
+    padding: 12px 14px; margin-bottom: 8px; gap: 10px; flex-wrap: wrap;
+  }
+  .despesa-descricao { font-size: 13px; font-weight: 600; }
+  .despesa-detalhe { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+  .despesa-direita { display: flex; align-items: center; gap: 10px; }
+  .despesa-valor { font-family: var(--font-mono); font-size: 13px; }
+  .despesa-status { font-size: 10px; text-transform: uppercase; padding: 2px 8px; border-radius: 4px; font-weight: 700; }
+  .despesa-status.pago { background: rgba(92,122,82,.18); color: #9CBF8F; }
+  .despesa-status.pendente { background: rgba(214,67,42,.14); color: #F0A08D; }
+  .btn-marcar-pago { font-size: 11px; color: var(--crust); text-decoration: underline; }
+
+  .btn-nova-despesa { margin-top: 8px; }
+  .aviso-vazio-pequeno { color: var(--text-faint); font-size: 13px; padding: 12px 0; }
+
+  /* ---- Modal despesa ---- */
+  #modal-despesa-overlay {
+    display: none; position: fixed; inset: 0; background: rgba(0,0,0,.6);
+    align-items: center; justify-content: center; z-index: 100; padding: 20px;
+  }
+  #modal-despesa-conteudo {
+    background: var(--ink); border-radius: var(--radius-lg); padding: 22px;
+    width: 100%; max-width: 420px; max-height: 85vh; overflow-y: auto;
+  }
+  #modal-despesa-conteudo h3 { font-family: var(--font-display); margin-bottom: 16px; }
+  .campo { margin-bottom: 12px; }
+  .campo label { display: block; font-size: 12px; color: var(--text-muted); margin-bottom: 5px; }
+  .campo-checkbox { display: flex; align-items: center; gap: 8px; margin-bottom: 16px; }
+  .campo-checkbox input { width: auto; }
+  .modal-botoes { display: flex; gap: 10px; margin-top: 8px; }
+  .modal-botoes button { flex: 1; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <span class="brand">ComandaFlow · Financeiro</span>
+  <span class="usuario">
+    <span id="nome-usuario">—</span>
+    <button onclick="fazerLogout()">saír</button>
+  </span>
+</div>
+
+<div class="conteudo">
+
+  <div class="secao-titulo">Período</div>
+  <div class="periodo-linha">
+    <button class="periodo-chip on" id="chip-hoje" onclick="selecionarPeriodo('hoje')">Hoje</button>
+    <button class="periodo-chip" id="chip-semana" onclick="selecionarPeriodo('semana')">Últimos 7 dias</button>
+    <button class="periodo-chip" id="chip-mes" onclick="selecionarPeriodo('mes')">Este mês</button>
+    <button class="periodo-chip" id="chip-personalizado" onclick="mostrarPeriodoPersonalizado()">Personalizado</button>
+  </div>
+  <div id="periodo-personalizado">
+    <input type="date" id="input-data-inicio" onchange="atualizarPeriodoPersonalizado()">
+    <span style="color:var(--text-muted);">até</span>
+    <input type="date" id="input-data-fim" onchange="atualizarPeriodoPersonalizado()">
+  </div>
+
+  <div class="secao-titulo">Resumo</div>
+  <div class="cards-grid">
+    <div class="card-resumo">
+      <div class="card-label">Receita</div>
+      <div class="card-valor" id="card-receita">R$ 0,00</div>
+    </div>
+    <div class="card-resumo">
+      <div class="card-label">Despesas pagas</div>
+      <div class="card-valor" id="card-despesas">R$ 0,00</div>
+    </div>
+    <div class="card-resumo">
+      <div class="card-label">Saldo</div>
+      <div class="card-valor" id="card-saldo">R$ 0,00</div>
+    </div>
+    <div class="card-resumo">
+      <div class="card-label">Comandas fechadas</div>
+      <div class="card-valor" id="card-comandas">0</div>
+    </div>
+  </div>
+
+  <div class="secao-titulo">Pagamentos por forma</div>
+  <div id="lista-pagamentos-forma"></div>
+
+  <div class="secao-titulo">Produtos mais vendidos</div>
+  <div id="lista-produtos-vendidos"></div>
+
+  <div class="secao-titulo">Despesas</div>
+  <div id="lista-despesas"></div>
+  <button class="btn-primary btn-nova-despesa" onclick="abrirModalDespesa()">+ Nova despesa</button>
+
+</div>
+
+<!-- MODAL: nova despesa -->
+<div id="modal-despesa-overlay">
+  <div id="modal-despesa-conteudo">
+    <h3>Nova despesa</h3>
+
+    <div class="campo">
+      <label>Descrição</label>
+      <input type="text" id="input-despesa-descricao" placeholder="Ex: Compra de embalagens">
+    </div>
+    <div class="campo">
+      <label>Categoria</label>
+      <select id="input-despesa-categoria">
+        <option value="fornecedor">Fornecedor</option>
+        <option value="aluguel">Aluguel</option>
+        <option value="funcionario">Funcionário</option>
+        <option value="insumo">Insumo</option>
+        <option value="energia">Energia</option>
+        <option value="agua">Água</option>
+        <option value="internet">Internet</option>
+        <option value="manutencao">Manutenção</option>
+        <option value="outro" selected>Outro</option>
+      </select>
+    </div>
+    <div class="campo">
+      <label>Valor (R$)</label>
+      <input type="text" inputmode="decimal" id="input-despesa-valor" placeholder="0,00">
+    </div>
+    <div class="campo">
+      <label>Vencimento</label>
+      <input type="date" id="input-despesa-vencimento">
+    </div>
+    <div class="campo-checkbox">
+      <input type="checkbox" id="input-despesa-ja-pago">
+      <label for="input-despesa-ja-pago" style="margin:0;">Já foi pago</label>
+    </div>
+
+    <div class="modal-botoes">
+      <button class="btn-ghost" onclick="fecharModalDespesa()">Cancelar</button>
+      <button class="btn-primary" onclick="salvarDespesa()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<script src="js/supabase-client.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/financeiro.js"></script>
+</body>
+</html>
