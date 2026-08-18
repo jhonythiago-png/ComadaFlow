@@ -141,8 +141,8 @@ function fecharTelaFechamento() {
 }
 
 function calcularValores() {
-  const { comanda } = estado.comandaEmFechamento;
-  const subtotal = Number(comanda.subtotal_itens);
+  const { itens } = estado.comandaEmFechamento;
+  const subtotal = round2(itens.reduce((soma, item) => soma + item.preco_unitario_calculado * item.quantidade, 0));
   const taxaValor = round2(subtotal * estado.taxaServicoPercentual / 100);
   const total = round2(subtotal + taxaValor + estado.taxaEntregaValor);
   return { subtotal, taxaValor, total };
@@ -166,7 +166,10 @@ function renderFechamento() {
           ${sabores ? `<div class="item-detalhe">${sabores}</div>` : ''}
           ${item.observacao ? `<div class="item-detalhe">${item.observacao}</div>` : ''}
         </div>
-        <span class="item-valor">R$ ${(item.preco_unitario_calculado * item.quantidade).toFixed(2).replace('.', ',')}</span>
+        <div style="display:flex; align-items:center; gap:10px;">
+          <span class="item-valor">R$ ${(item.preco_unitario_calculado * item.quantidade).toFixed(2).replace('.', ',')}</span>
+          <button class="btn-remover" onclick="removerItemFechamento('${item.id}')" title="Remover item (não cobrar)">✕</button>
+        </div>
       </div>
     `;
   }).join('');
@@ -185,6 +188,33 @@ function renderFechamento() {
 function paraNumero(texto) {
   if (typeof texto !== 'string') return Number(texto) || 0;
   return parseFloat(texto.replace(',', '.')) || 0;
+}
+
+/**
+ * Remove um item da conta (não cobra) — pra quando o atendente
+ * lançou algo errado por engano e o cliente não consumiu aquilo.
+ * Marca como cancelado no banco e recalcula tudo na hora.
+ */
+async function removerItemFechamento(itemId) {
+  const item = estado.comandaEmFechamento.itens.find(i => i.id === itemId);
+  if (!item) return;
+
+  const confirmar = confirm(`Remover "${item.quantidade}× ${item.itens_cardapio.nome}" da conta? Isso não vai ser cobrado.`);
+  if (!confirmar) return;
+
+  const { error } = await supabaseClient
+    .from('pedido_itens')
+    .update({ status: 'cancelado' })
+    .eq('id', itemId);
+
+  if (error) {
+    mostrarToast('Erro ao remover item.', 'erro');
+    return;
+  }
+
+  estado.comandaEmFechamento.itens = estado.comandaEmFechamento.itens.filter(i => i.id !== itemId);
+  renderFechamento();
+  mostrarToast('Item removido da conta.');
 }
 
 function atualizarTaxaServico(valor) {
