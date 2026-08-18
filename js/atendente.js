@@ -13,6 +13,7 @@ const estado = {
   selecaoSabores: [],          // ordem de seleção de sabores no modal (pro cálculo de cota)
   ingredientesRemovidos: [],   // ids removidos de um item 'fixo' no modal
   observacaoAtual: '',          // texto da observação do item sendo montado agora (reseta a cada item novo)
+  ultimosPedidosEnviados: [],  // cache da última consulta de "pedidos enviados" (usado pelo botão cancelar)
 };
 
 // ------------------------------------------------------------
@@ -637,6 +638,11 @@ async function abrirPedidosEnviados() {
     return;
   }
 
+  // Guarda a lista buscada — os botões de cancelar usam isso pra achar
+  // o nome do item, em vez de tentar colocar texto solto dentro do onclick
+  // (o que causava erro quando o nome do item tinha acento/aspas)
+  estado.ultimosPedidosEnviados = itens || [];
+
   const htmlBotaoConferencia = `
     <button class="btn-ghost" style="width:100%; margin-bottom:14px;" onclick="imprimirConferencia()">
       🖨️ Imprimir conferência (não fecha a conta)
@@ -663,7 +669,7 @@ async function abrirPedidosEnviados() {
         ${pi.observacao ? `<div class="linha-detalhe">${pi.observacao}</div>` : ''}
         <div class="linha-detalhe">${horario}</div>
         <span class="linha-status">${pi.status}</span>
-        ${podeCancel ? `<button class="btn-cancelar-item" onclick="cancelarItemEnviado('${pi.id}', '${pi.quantidade}× ${pi.itens_cardapio.nome}'.replace(/'/g, ""))">Cancelar item</button>` : ''}
+        ${podeCancel ? `<button class="btn-cancelar-item" onclick="cancelarItemEnviado('${pi.id}')">Cancelar item</button>` : ''}
       </div>
     `;
   }).join('');
@@ -675,7 +681,11 @@ async function abrirPedidosEnviados() {
   lista.innerHTML = htmlBotaoConferencia + htmlItens + htmlObs;
 }
 
-async function cancelarItemEnviado(pedidoItemId, nomeItem) {
+async function cancelarItemEnviado(pedidoItemId) {
+  const item = estado.ultimosPedidosEnviados.find(pi => pi.id === pedidoItemId);
+  if (!item) return;
+
+  const nomeItem = `${item.quantidade}× ${item.itens_cardapio.nome}`;
   const confirmar = confirm(`Cancelar "${nomeItem}"? A cozinha será avisada pra não produzir (ou parar, se já estiver em andamento).`);
   if (!confirmar) return;
 
@@ -689,11 +699,12 @@ async function cancelarItemEnviado(pedidoItemId, nomeItem) {
     return;
   }
 
-  // Avisa a cozinha via observação (reaproveita o mesmo cupom de observações gerais)
-  await supabaseClient.from('comanda_observacoes').insert({
+  // Dispara um cupom PRÓPRIO de cancelamento (bem destacado, não misturado
+  // com observações gerais — pra cozinha não ter chance de não perceber)
+  await supabaseClient.from('solicitacoes_impressao').insert({
     comanda_id: estado.comandaAtual.id,
-    texto: `❌ CANCELAR: ${nomeItem}`,
-    status: 'enviado',
+    tipo: 'cancelamento',
+    detalhe: nomeItem,
     criado_por: estado.perfil.id,
   });
 
