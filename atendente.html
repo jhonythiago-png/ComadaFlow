@@ -175,6 +175,18 @@
   .obs-geral-enviada {
     font-family: var(--font-mono); font-size: 12.5px; color: var(--crust); padding: 8px 0; border-bottom: 1px dashed var(--ink-line);
   }
+
+  /* Reforço final: garante que os dois modais fiquem centralizados em telas
+     maiores, independente da ordem de outras regras acima (essa é sempre a última) */
+  @media (min-width: 768px) {
+    #modal-overlay, #modal-pedidos-overlay { align-items: center !important; }
+    #modal-conteudo, #modal-pedidos-conteudo {
+      border-radius: var(--radius-lg) !important;
+      max-width: 480px !important;
+      width: 90% !important;
+      max-height: 80vh !important;
+    }
+  }
 </style>
 </head>
 <body>
