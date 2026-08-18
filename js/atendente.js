@@ -27,6 +27,34 @@ async function iniciar() {
   await carregarCardapio();
   await carregarComandasAbertas();
   escutarMudancasComandas();
+
+  // Verificação automática a cada 5s — garante que a lista/comanda atual
+  // fique sempre atualizada, mesmo se o aviso em tempo real não chegar
+  setInterval(verificarAtualizacoes, 5000);
+}
+
+async function verificarAtualizacoes() {
+  const telaSelecao = document.getElementById('tela-selecao-comanda');
+  const naListaDeComandas = telaSelecao.style.display !== 'none';
+
+  if (naListaDeComandas) {
+    carregarComandasAbertas();
+    return;
+  }
+
+  // Se estiver dentro de uma comanda, confirma se ela ainda está aberta
+  if (estado.comandaAtual) {
+    const { data, error } = await supabaseClient
+      .from('comandas')
+      .select('status')
+      .eq('id', estado.comandaAtual.id)
+      .single();
+
+    if (!error && data?.status === 'fechada') {
+      mostrarToast('Essa comanda foi fechada pelo caixa.');
+      voltarParaComandas();
+    }
+  }
 }
 
 /**
