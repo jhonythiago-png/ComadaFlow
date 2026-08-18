@@ -699,12 +699,11 @@ async function cancelarItemEnviado(pedidoItemId) {
     return;
   }
 
-  // Dispara um cupom PRÓPRIO de cancelamento (bem destacado, não misturado
-  // com observações gerais — pra cozinha não ter chance de não perceber)
+  // Reimprime o pedido da cozinha atualizado (sem o item cancelado),
+  // pra cozinha ver exatamente o que continua valendo
   await supabaseClient.from('solicitacoes_impressao').insert({
     comanda_id: estado.comandaAtual.id,
-    tipo: 'cancelamento',
-    detalhe: nomeItem,
+    tipo: 'pedido_atualizado',
     criado_por: estado.perfil.id,
   });
 
