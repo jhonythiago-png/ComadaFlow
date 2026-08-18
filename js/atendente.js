@@ -637,14 +637,22 @@ async function abrirPedidosEnviados() {
     return;
   }
 
+  const htmlBotaoConferencia = `
+    <button class="btn-ghost" style="width:100%; margin-bottom:14px;" onclick="imprimirConferencia()">
+      🖨️ Imprimir conferência (não fecha a conta)
+    </button>
+  `;
+
   if ((!itens || itens.length === 0) && (!obsGerais || obsGerais.length === 0)) {
-    lista.innerHTML = '<div class="aviso-vazio">Nenhum pedido enviado ainda pra essa comanda.</div>';
+    lista.innerHTML = htmlBotaoConferencia + '<div class="aviso-vazio">Nenhum pedido enviado ainda pra essa comanda.</div>';
     return;
   }
 
   const htmlItens = (itens || []).map(pi => {
     const sabores = pi.pedido_item_ingredientes.map(s => s.ingredientes.nome).join(', ');
     const horario = new Date(pi.criado_em).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+    // Só permite cancelar se ainda não foi entregue (ainda dá tempo de avisar a cozinha)
+    const podeCancel = pi.status === 'enviado' || pi.status === 'impresso';
     return `
       <div class="pedido-enviado-linha">
         <div class="linha-topo">
@@ -655,6 +663,7 @@ async function abrirPedidosEnviados() {
         ${pi.observacao ? `<div class="linha-detalhe">${pi.observacao}</div>` : ''}
         <div class="linha-detalhe">${horario}</div>
         <span class="linha-status">${pi.status}</span>
+        ${podeCancel ? `<button class="btn-cancelar-item" onclick="cancelarItemEnviado('${pi.id}', '${pi.quantidade}× ${pi.itens_cardapio.nome}'.replace(/'/g, ""))">Cancelar item</button>` : ''}
       </div>
     `;
   }).join('');
@@ -663,7 +672,47 @@ async function abrirPedidosEnviados() {
     <div class="obs-geral-enviada">📝 ${o.texto}</div>
   `).join('');
 
-  lista.innerHTML = htmlItens + htmlObs;
+  lista.innerHTML = htmlBotaoConferencia + htmlItens + htmlObs;
+}
+
+async function cancelarItemEnviado(pedidoItemId, nomeItem) {
+  const confirmar = confirm(`Cancelar "${nomeItem}"? A cozinha será avisada pra não produzir (ou parar, se já estiver em andamento).`);
+  if (!confirmar) return;
+
+  const { error: erroCancelar } = await supabaseClient
+    .from('pedido_itens')
+    .update({ status: 'cancelado' })
+    .eq('id', pedidoItemId);
+
+  if (erroCancelar) {
+    mostrarToast('Erro ao cancelar item.', 'erro');
+    return;
+  }
+
+  // Avisa a cozinha via observação (reaproveita o mesmo cupom de observações gerais)
+  await supabaseClient.from('comanda_observacoes').insert({
+    comanda_id: estado.comandaAtual.id,
+    texto: `❌ CANCELAR: ${nomeItem}`,
+    status: 'enviado',
+    criado_por: estado.perfil.id,
+  });
+
+  mostrarToast('Item cancelado e cozinha avisada.');
+  abrirPedidosEnviados(); // recarrega a lista
+}
+
+async function imprimirConferencia() {
+  const { error } = await supabaseClient.from('solicitacoes_impressao').insert({
+    comanda_id: estado.comandaAtual.id,
+    tipo: 'conferencia',
+    criado_por: estado.perfil.id,
+  });
+
+  if (error) {
+    mostrarToast('Erro ao pedir impressão.', 'erro');
+    return;
+  }
+  mostrarToast('Conferência enviada pra impressão! 🖨️');
 }
 
 function fecharPedidosEnviados() {
