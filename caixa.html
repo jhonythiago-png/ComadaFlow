@@ -101,6 +101,25 @@
   }
   #btn-fechar-conta { width: 100%; }
   #btn-fechar-conta:disabled { opacity: .4; }
+
+  .btn-transferir {
+    background: var(--ink-line); color: var(--crust); border-radius: 6px;
+    width: 26px; height: 26px; font-size: 14px; flex-shrink: 0;
+  }
+
+  .modal-transferencia-overlay {
+    display: none; position: fixed; inset: 0; background: rgba(0,0,0,.6);
+    align-items: center; justify-content: center; z-index: 100; padding: 20px;
+  }
+  .modal-transferencia-conteudo {
+    background: var(--ink); border-radius: var(--radius-lg); padding: 22px;
+    width: 100%; max-width: 360px;
+  }
+  .modal-transferencia-conteudo h3 { font-family: var(--font-display); margin-bottom: 10px; }
+  .transferencia-item-label { font-size: 13px; color: var(--text-muted); margin-bottom: 14px; }
+  .transferencia-item-label strong { color: var(--text-primary); }
+  .lista-comandas-irmas { display: flex; flex-direction: column; gap: 8px; }
+  .btn-comanda-irma { width: 100%; text-align: left; }
 </style>
 </head>
 <body class="app-shell">
@@ -163,6 +182,16 @@
 
   <div class="fechamento-footer">
     <button id="btn-fechar-conta" class="btn-danger" disabled onclick="confirmarFechamento()">Fechar conta</button>
+  </div>
+</div>
+
+<!-- MODAL: transferir item pra outra pessoa da mesma mesa -->
+<div id="modal-transferencia-overlay" class="modal-transferencia-overlay">
+  <div class="modal-transferencia-conteudo">
+    <h3>Transferir item</h3>
+    <p class="transferencia-item-label">Transferir <strong id="transferencia-item-nome"></strong> pra:</p>
+    <div id="lista-comandas-irmas" class="lista-comandas-irmas"></div>
+    <button class="btn-ghost" style="width:100%; margin-top:12px;" onclick="fecharModalTransferencia()">Cancelar</button>
   </div>
 </div>
 
