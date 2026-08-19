@@ -43,6 +43,12 @@
   .ticket-numero { font-family: var(--font-display); font-weight: 700; font-size: 16px; margin-bottom: 2px; }
   .ticket-tempo { font-size: 11px; color: var(--text-muted); margin-bottom: 12px; }
   .ticket-divisor { border-top: 1px dashed var(--ink-line); margin-bottom: 10px; }
+  .estagio-entrega {
+    font-size: 11px; font-weight: 600; padding: 4px 8px; border-radius: 6px; margin-bottom: 8px; display: inline-block;
+  }
+  .estagio-entrega.preparando { background: rgba(214,67,42,.14); color: #F0A08D; }
+  .estagio-entrega.saiu { background: rgba(59,130,246,.14); color: #93C5FD; }
+  .estagio-entrega.entregue { background: rgba(92,122,82,.18); color: #9CBF8F; }
   .ticket-total-row { display: flex; justify-content: space-between; align-items: baseline; }
   .ticket-total-row .label { font-family: var(--font-mono); font-size: 10px; color: var(--text-muted); text-transform: uppercase; }
   .ticket-total-row .valor { font-family: var(--font-mono); font-weight: 600; font-size: 16px; color: var(--crust); }
@@ -84,6 +90,10 @@
   .pagamento-linha { display: flex; gap: 8px; margin-bottom: 8px; align-items: center; }
   .pagamento-linha select { flex: 1.2; }
   .pagamento-linha input { flex: 1; }
+  .troco-linha { display: flex; align-items: center; gap: 8px; margin: -2px 0 10px; padding-left: 4px; }
+  .troco-linha label { font-size: 11px; color: var(--text-muted); flex-shrink: 0; }
+  .troco-linha input { flex: 1; max-width: 100px; padding: 6px 8px; font-size: 12.5px; }
+  .troco-resultado { font-family: var(--font-mono); font-size: 12px; color: var(--crust); font-weight: 600; white-space: nowrap; }
   .aviso-vazio-pequeno { color: var(--text-faint); font-size: 12px; padding: 10px 0; }
   .btn-add-pagamento {
     background: var(--ink-soft); border: 1px dashed var(--ink-line); color: var(--text-muted);
