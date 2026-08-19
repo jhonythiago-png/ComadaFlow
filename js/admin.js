@@ -43,6 +43,29 @@ async function sairAdmin() {
 }
 
 // ------------------------------------------------------------
+// Modal de confirmação genérico — substitui o confirm() nativo,
+// que não é confiável em apps salvos na tela inicial do iPhone
+// ------------------------------------------------------------
+let acaoConfirmacaoPendente = null;
+
+function mostrarConfirmacaoGenerica(mensagem, aoConfirmar) {
+  document.getElementById('confirmacao-generica-texto').textContent = mensagem;
+  acaoConfirmacaoPendente = aoConfirmar;
+  document.getElementById('modal-confirmacao-generica-overlay').style.display = 'flex';
+}
+
+function fecharModalConfirmacaoGenerica() {
+  document.getElementById('modal-confirmacao-generica-overlay').style.display = 'none';
+  acaoConfirmacaoPendente = null;
+}
+
+async function executarConfirmacaoGenerica() {
+  const acao = acaoConfirmacaoPendente;
+  fecharModalConfirmacaoGenerica();
+  if (acao) await acao();
+}
+
+// ------------------------------------------------------------
 // Lista de estabelecimentos
 // ------------------------------------------------------------
 async function carregarEstabelecimentos() {
@@ -76,9 +99,58 @@ function renderEstabelecimentos() {
           <div class="cliente-nome">${e.nome} ${!e.ativo ? '<span class="badge-inativo">INATIVO</span>' : ''}</div>
           <div class="cliente-detalhe">slug: ${e.slug} · ${e.qtd_perfis} usuário${e.qtd_perfis !== 1 ? 's' : ''} · desde ${data}</div>
         </div>
+        <div class="cliente-acoes">
+          <button class="btn-toggle-cliente" onclick="alternarStatusEstabelecimento('${e.id}', ${!e.ativo})">
+            ${e.ativo ? 'Desativar' : 'Ativar'}
+          </button>
+          <button class="btn-excluir-cliente" onclick="confirmarExcluirEstabelecimento('${e.id}', '${e.nome.replace(/'/g, "\\'")}')">
+            Excluir
+          </button>
+        </div>
       </div>
     `;
   }).join('');
+}
+
+async function alternarStatusEstabelecimento(id, novoStatus) {
+  const { error } = await supabaseClient.from('estabelecimentos').update({ ativo: novoStatus }).eq('id', id);
+  if (error) { mostrarToast('Erro ao atualizar status.', 'erro'); console.error(error); return; }
+  mostrarToast(novoStatus ? 'Cliente reativado.' : 'Cliente desativado.');
+  await carregarEstabelecimentos();
+}
+
+function confirmarExcluirEstabelecimento(id, nome) {
+  mostrarConfirmacaoGenerica(
+    `Excluir "${nome}" de vez? Isso apaga TUDO desse cliente (cardápio, comandas, financeiro, logins) — não tem como desfazer.`,
+    async () => {
+      try {
+        const { data: sessao } = await supabaseClient.auth.getSession();
+
+        const resposta = await fetch(`${SUPABASE_URL}/functions/v1/excluir-estabelecimento`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${sessao.session.access_token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ estabelecimento_id: id }),
+        });
+
+        const resultado = await resposta.json();
+
+        if (!resposta.ok) {
+          mostrarToast(resultado.erro || 'Erro ao excluir.', 'erro');
+          return;
+        }
+
+        mostrarToast('Cliente excluído.');
+        await carregarEstabelecimentos();
+
+      } catch (erro) {
+        console.error(erro);
+        mostrarToast('Erro de conexão.', 'erro');
+      }
+    }
+  );
 }
 
 // ------------------------------------------------------------
