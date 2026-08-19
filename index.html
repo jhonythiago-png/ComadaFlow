@@ -75,6 +75,12 @@ const form = document.getElementById('form-login');
 const btnEntrar = document.getElementById('btn-entrar');
 const mensagemErro = document.getElementById('mensagem-erro');
 
+// Se veio de um logout forçado (conta desativada), avisa antes de mais nada
+const parametrosUrl = new URLSearchParams(window.location.search);
+if (parametrosUrl.get('motivo') === 'desativado') {
+  mensagemErro.textContent = 'Sua conta foi desativada. Fale com o responsável.';
+}
+
 form.addEventListener('submit', async (e) => {
   e.preventDefault();
   mensagemErro.textContent = '';
@@ -108,7 +114,20 @@ form.addEventListener('submit', async (e) => {
       return;
     }
 
-    // 3) Buscar o perfil (nível de acesso, estabelecimento) e guardar na sessão do navegador
+    // 3) Confirma se é o SUPER ADMIN da plataforma (nível acima de qualquer estabelecimento)
+    const { data: souSuperAdmin } = await supabaseClient
+      .from('super_admins')
+      .select('id, nome')
+      .eq('auth_user_id', sessao.user.id)
+      .maybeSingle();
+
+    if (souSuperAdmin) {
+      sessionStorage.setItem('comandaflow_super_admin', JSON.stringify(souSuperAdmin));
+      window.location.href = 'admin.html';
+      return;
+    }
+
+    // 4) Se não for super admin, busca o perfil normal (nível de acesso, estabelecimento)
     const { data: perfil, error: erroPerfil } = await supabaseClient
       .from('perfis')
       .select('id, nome, username, nivel_acesso, estabelecimento_id')

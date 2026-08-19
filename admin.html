@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#17140F">
+<title>ComandaFlow — Admin</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<link rel="stylesheet" href="css/tokens.css">
+<style>
+  html { height: 100%; }
+  body { min-height: 100vh; min-height: 100dvh; }
+
+  .topbar {
+    padding: calc(14px + env(safe-area-inset-top)) 28px 14px;
+    display: flex; justify-content: space-between; align-items: center;
+    border-bottom: 1px solid var(--ink-line);
+  }
+  .topbar .brand { font-family: var(--font-display); font-weight: 800; font-size: 16px; color: var(--crust); }
+  .topbar .brand .badge-plataforma {
+    font-family: var(--font-mono); font-size: 9px; background: var(--paprika); color: #fff;
+    padding: 2px 7px; border-radius: 4px; margin-left: 8px; vertical-align: middle; text-transform: uppercase;
+  }
+  .topbar .usuario { font-size: 12px; color: var(--text-muted); }
+  .topbar .usuario button { color: var(--paprika); font-size: 12px; margin-left: 8px; text-decoration: underline; }
+
+  .conteudo {
+    padding: 24px 20px calc(48px + env(safe-area-inset-bottom));
+    max-width: 900px; width: 100%; margin: 0 auto; box-sizing: border-box;
+  }
+  @media (min-width: 900px) {
+    .conteudo { padding: 32px 40px 60px; }
+  }
+
+  .painel {
+    background: var(--ink-soft); border: 1px solid var(--ink-line); border-radius: var(--radius-lg);
+    padding: 20px 22px;
+  }
+  .painel-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 10px; }
+  .painel-header h3 { font-family: var(--font-display); font-size: 18px; font-weight: 700; }
+  .painel-header .contador { font-family: var(--font-mono); font-size: 12px; color: var(--text-muted); }
+
+  .btn-novo-cliente { padding: 10px 18px; width: auto; }
+
+  .cliente-linha {
+    background: var(--ink); border: 1px solid var(--ink-line); border-radius: var(--radius-sm);
+    padding: 14px 16px; margin-bottom: 8px;
+  }
+  .cliente-linha:last-child { margin-bottom: 0; }
+  .cliente-nome { font-size: 14px; font-weight: 700; font-family: var(--font-display); }
+  .badge-inativo {
+    font-family: var(--font-mono); font-size: 9px; background: var(--paprika); color: #fff;
+    padding: 2px 6px; border-radius: 4px; margin-left: 6px;
+  }
+  .cliente-detalhe { font-size: 11px; color: var(--text-muted); margin-top: 3px; font-family: var(--font-mono); }
+  .aviso-vazio { color: var(--text-faint); font-size: 13px; text-align: center; padding: 40px 0; }
+
+  /* ---- Modal novo cliente ---- */
+  #modal-cliente-overlay {
+    display: none; position: fixed; inset: 0; background: rgba(0,0,0,.6);
+    align-items: center; justify-content: center; z-index: 100; padding: 20px;
+  }
+  #modal-cliente-conteudo {
+    background: var(--ink); border-radius: var(--radius-lg); padding: 22px;
+    width: 100%; max-width: 440px; max-height: 85vh; overflow-y: auto;
+  }
+  #modal-cliente-conteudo h3 { font-family: var(--font-display); margin-bottom: 6px; }
+  #modal-cliente-conteudo .subsecao {
+    font-family: var(--font-mono); font-size: 11px; text-transform: uppercase; color: var(--crust);
+    letter-spacing: .04em; margin: 18px 0 10px; padding-top: 12px; border-top: 1px solid var(--ink-line);
+  }
+  #modal-cliente-conteudo .subsecao:first-of-type { border-top: none; padding-top: 0; margin-top: 14px; }
+  .campo { margin-bottom: 12px; }
+  .campo label { display: block; font-size: 12px; color: var(--text-muted); margin-bottom: 5px; }
+  .modal-botoes { display: flex; gap: 10px; margin-top: 8px; }
+  .modal-botoes button { flex: 1; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <span class="brand">ComandaFlow <span class="badge-plataforma">Admin</span></span>
+  <span class="usuario">
+    <span id="nome-admin">—</span>
+    <button onclick="sairAdmin()">saír</button>
+  </span>
+</div>
+
+<div class="conteudo">
+  <div class="painel">
+    <div class="painel-header">
+      <h3>Clientes</h3>
+      <span class="contador" id="contador-estabelecimentos">0 clientes</span>
+      <button class="btn-primary btn-novo-cliente" onclick="abrirModalNovoCliente()">+ Novo cliente</button>
+    </div>
+    <div id="lista-estabelecimentos"><div class="aviso-vazio">Carregando...</div></div>
+  </div>
+</div>
+
+<!-- MODAL: novo cliente -->
+<div id="modal-cliente-overlay">
+  <div id="modal-cliente-conteudo">
+    <h3>Novo cliente</h3>
+
+    <div class="subsecao">Dados do estabelecimento</div>
+    <div class="campo">
+      <label>Nome do negócio</label>
+      <input type="text" id="input-cliente-nome" placeholder="Ex: Lanchonete do João" oninput="sugerirSlug()">
+    </div>
+    <div class="campo">
+      <label>Slug (identificador único, gerado automático)</label>
+      <input type="text" id="input-cliente-slug" placeholder="lanchonete-do-joao" autocapitalize="none">
+    </div>
+
+    <div class="subsecao">Primeiro usuário Master</div>
+    <div class="campo">
+      <label>Nome da pessoa</label>
+      <input type="text" id="input-master-nome" placeholder="Ex: João Silva">
+    </div>
+    <div class="campo">
+      <label>Usuário (pra login)</label>
+      <input type="text" id="input-master-username" placeholder="Ex: joao" autocapitalize="none">
+    </div>
+    <div class="campo">
+      <label>Senha</label>
+      <div style="display:flex; gap:8px;">
+        <input type="password" id="input-master-senha" placeholder="Mínimo 6 caracteres" style="flex:1;">
+        <button type="button" class="btn-ghost" style="flex-shrink:0; padding:0 14px;" onclick="alternarMostrarSenha('input-master-senha', this)">👁</button>
+      </div>
+    </div>
+    <div class="campo">
+      <label>Confirmar senha</label>
+      <div style="display:flex; gap:8px;">
+        <input type="password" id="input-master-senha-confirmar" placeholder="Digite de novo" style="flex:1;">
+        <button type="button" class="btn-ghost" style="flex-shrink:0; padding:0 14px;" onclick="alternarMostrarSenha('input-master-senha-confirmar', this)">👁</button>
+      </div>
+    </div>
+
+    <div class="modal-botoes">
+      <button class="btn-ghost" onclick="fecharModalNovoCliente()">Cancelar</button>
+      <button class="btn-primary" id="btn-salvar-cliente" onclick="salvarNovoCliente()">Criar cliente</button>
+    </div>
+  </div>
+</div>
+
+<script src="js/supabase-client.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/admin.js"></script>
+</body>
+</html>
