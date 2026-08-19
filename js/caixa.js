@@ -123,18 +123,43 @@ function renderComandas() {
 }
 
 async function confirmarEntregaRealizada(comandaId) {
-  const confirmar = confirm('Confirma que o motoboy voltou e a entrega foi realizada? Isso vai fechar a conta de verdade.');
-  if (!confirmar) return;
+  mostrarConfirmacaoGenerica(
+    'O motoboy voltou e a entrega foi realizada? Isso vai fechar a conta de verdade.',
+    async () => {
+      const { error } = await supabaseClient
+        .from('comandas')
+        .update({ status_entrega: 'entregue', status: 'fechada', fechada_em: new Date().toISOString() })
+        .eq('id', comandaId);
 
-  const { error } = await supabaseClient
-    .from('comandas')
-    .update({ status_entrega: 'entregue', status: 'fechada', fechada_em: new Date().toISOString() })
-    .eq('id', comandaId);
+      if (error) { mostrarToast('Erro ao confirmar entrega.', 'erro'); return; }
 
-  if (error) { mostrarToast('Erro ao confirmar entrega.', 'erro'); return; }
+      mostrarToast('Entrega confirmada e conta fechada!');
+      await carregarComandas();
+    }
+  );
+}
 
-  mostrarToast('Entrega confirmada e conta fechada!');
-  await carregarComandas();
+// ------------------------------------------------------------
+// Modal de confirmação genérico — substitui o confirm() nativo,
+// que não é confiável em apps salvos na tela inicial do iPhone
+// ------------------------------------------------------------
+let acaoConfirmacaoPendente = null;
+
+function mostrarConfirmacaoGenerica(mensagem, aoConfirmar) {
+  document.getElementById('confirmacao-generica-texto').textContent = mensagem;
+  acaoConfirmacaoPendente = aoConfirmar;
+  document.getElementById('modal-confirmacao-generica-overlay').style.display = 'flex';
+}
+
+function fecharModalConfirmacaoGenerica() {
+  document.getElementById('modal-confirmacao-generica-overlay').style.display = 'none';
+  acaoConfirmacaoPendente = null;
+}
+
+async function executarConfirmacaoGenerica() {
+  const acao = acaoConfirmacaoPendente;
+  fecharModalConfirmacaoGenerica();
+  if (acao) await acao();
 }
 
 // ------------------------------------------------------------
@@ -257,22 +282,24 @@ async function removerItemFechamento(itemId) {
   const item = estado.comandaEmFechamento.itens.find(i => i.id === itemId);
   if (!item) return;
 
-  const confirmar = confirm(`Remover "${item.quantidade}× ${item.itens_cardapio.nome}" da conta? Isso não vai ser cobrado.`);
-  if (!confirmar) return;
+  mostrarConfirmacaoGenerica(
+    `Remover "${item.quantidade}× ${item.itens_cardapio.nome}" da conta? Isso não vai ser cobrado.`,
+    async () => {
+      const { error } = await supabaseClient
+        .from('pedido_itens')
+        .update({ status: 'cancelado' })
+        .eq('id', itemId);
 
-  const { error } = await supabaseClient
-    .from('pedido_itens')
-    .update({ status: 'cancelado' })
-    .eq('id', itemId);
+      if (error) {
+        mostrarToast('Erro ao remover item.', 'erro');
+        return;
+      }
 
-  if (error) {
-    mostrarToast('Erro ao remover item.', 'erro');
-    return;
-  }
-
-  estado.comandaEmFechamento.itens = estado.comandaEmFechamento.itens.filter(i => i.id !== itemId);
-  renderFechamento();
-  mostrarToast('Item removido da conta.');
+      estado.comandaEmFechamento.itens = estado.comandaEmFechamento.itens.filter(i => i.id !== itemId);
+      renderFechamento();
+      mostrarToast('Item removido da conta.');
+    }
+  );
 }
 
 // ------------------------------------------------------------
@@ -439,11 +466,7 @@ function renderPagamentos() {
     lista.innerHTML = '<div class="aviso-vazio-pequeno">Nenhuma forma de pagamento adicionada</div>';
   } else {
     lista.innerHTML = estado.pagamentos.map((p, i) => {
-      // Calculadora de troco pra QUALQUER comanda (mesa, balcão, entrega) —
-      // sempre que a forma for dinheiro, ajuda a saber quanto devolver
       const mostrarTroco = p.forma === 'dinheiro';
-      const troco = mostrarTroco ? round2((p.valorRecebido || 0) - p.valor) : 0;
-
       return `
       <div class="pagamento-linha">
         <select onchange="atualizarFormaPagamento(${i}, this.value)">
@@ -461,19 +484,35 @@ function renderPagamentos() {
           <input type="text" inputmode="decimal" placeholder="Ex: 50,00"
                  value="${p.valorRecebido ? p.valorRecebido.toString().replace('.', ',') : ''}"
                  oninput="atualizarValorRecebido(${i}, this.value)">
-          ${p.valorRecebido ? `<span class="troco-resultado">Troco: R$ ${troco.toFixed(2).replace('.', ',')}</span>` : ''}
+          <span class="troco-resultado" id="troco-resultado-${i}"></span>
         </div>
       ` : ''}
       `;
     }).join('');
+
+    // Preenche o resultado do troco de cada linha SEM precisar redesenhar
+    // (redesenhar destruía o campo e fechava o teclado do celular a cada tecla)
+    estado.pagamentos.forEach((p, i) => atualizarTextoTroco(i));
   }
 
   renderResumoPagamento();
 }
 
+function atualizarTextoTroco(index) {
+  const p = estado.pagamentos[index];
+  const el = document.getElementById(`troco-resultado-${index}`);
+  if (!el) return;
+  if (p.forma === 'dinheiro' && p.valorRecebido) {
+    const troco = round2(p.valorRecebido - p.valor);
+    el.textContent = `Troco: R$ ${troco.toFixed(2).replace('.', ',')}`;
+  } else {
+    el.textContent = '';
+  }
+}
+
 function atualizarValorRecebido(index, valor) {
   estado.pagamentos[index].valorRecebido = paraNumero(valor);
-  renderPagamentos();
+  atualizarTextoTroco(index);
 }
 
 function renderResumoPagamento() {
