@@ -219,11 +219,12 @@
 
   <div class="painel">
     <div class="despesas-header">
-      <div class="secao-titulo"><span class="tag">06</span> Sangria de caixa</div>
-      <button class="btn-primary btn-nova-despesa" onclick="abrirModalSangria()">+ Registrar sangria</button>
+      <div class="secao-titulo"><span class="tag">06</span> Ajuste de caixa</div>
+      <button class="btn-primary btn-nova-despesa" onclick="abrirModalSangria()">+ Registrar ajuste</button>
     </div>
     <p style="font-size:12px; color:var(--text-muted); margin-bottom:14px;">
-      Sangria é a retirada de dinheiro do caixa durante o dia. Não é uma despesa — só ajuda a bater o caixa no fim do dia.
+      Use pra registrar diferenças reais de caixa (sobrou ou faltou dinheiro) ou retiradas (ex: guardar no cofre).
+      Isso afeta o <strong>Saldo</strong> acima, mas não mexe na Receita.
     </p>
     <div id="lista-sangrias"></div>
   </div>
@@ -273,13 +274,20 @@
   </div>
 </div>
 
-<!-- MODAL: nova sangria -->
+<!-- MODAL: novo ajuste de caixa -->
 <div id="modal-sangria-overlay" class="modal-item-overlay-clone">
   <div class="modal-item-conteudo-clone">
-    <h3>Registrar sangria</h3>
+    <h3>Registrar ajuste de caixa</h3>
 
     <div class="campo">
-      <label>Valor retirado (R$)</label>
+      <label>Tipo</label>
+      <select id="input-sangria-tipo">
+        <option value="retirada">Retirada (diminui o saldo) — ex: faltou dinheiro, guardou no cofre</option>
+        <option value="adicao">Adição (aumenta o saldo) — ex: sobrou dinheiro no fechamento</option>
+      </select>
+    </div>
+    <div class="campo">
+      <label>Valor (R$)</label>
       <input type="text" inputmode="decimal" id="input-sangria-valor" placeholder="0,00">
     </div>
     <div class="campo">
