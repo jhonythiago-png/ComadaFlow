@@ -81,6 +81,7 @@ function injetarNavegacao(perfil, paginaAtual) {
     { id: 'atendente', label: 'Atendente', href: 'atendente.html', masterOnly: false },
     { id: 'caixa', label: 'Caixa', href: 'caixa.html', masterOnly: false },
     { id: 'financeiro', label: 'Financeiro', href: 'financeiro.html', masterOnly: true },
+    { id: 'cardapio', label: 'Cardápio', href: 'cardapio.html', masterOnly: true },
     { id: 'master', label: 'Config', href: 'master.html', masterOnly: true },
   ];
 
