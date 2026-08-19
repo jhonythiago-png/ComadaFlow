@@ -233,7 +233,7 @@ function rotuloComanda(c) {
 async function selecionarComanda(comandaId) {
   const { data, error } = await supabaseClient
     .from('comandas')
-    .select('id, numero_sequencial, tipo, numero_mesa, nome_cliente, identificador_pessoa, endereco_entrega')
+    .select('id, numero_sequencial, tipo, numero_mesa, nome_cliente, identificador_pessoa, endereco_entrega, telefone_contato')
     .eq('id', comandaId)
     .single();
 
@@ -258,6 +258,7 @@ async function abrirNovaComandaAvulsa() {
 
 async function abrirNovaComandaEntrega() {
   const nomeCliente = document.getElementById('input-entrega-nome-cliente').value.trim();
+  const telefone = document.getElementById('input-entrega-telefone').value.trim();
   const endereco = document.getElementById('input-entrega-endereco').value.trim();
   const taxaTexto = document.getElementById('input-entrega-taxa').value;
 
@@ -269,11 +270,13 @@ async function abrirNovaComandaEntrega() {
   await criarComanda({
     tipo: 'entrega',
     nome_cliente: nomeCliente,
+    telefone_contato: telefone || null,
     endereco_entrega: endereco,
     taxa_entrega: taxaEntrega,
   });
 
   document.getElementById('input-entrega-nome-cliente').value = '';
+  document.getElementById('input-entrega-telefone').value = '';
   document.getElementById('input-entrega-endereco').value = '';
   document.getElementById('input-entrega-taxa').value = '';
 }
@@ -317,7 +320,8 @@ function mostrarTelaCardapio() {
 
   const elEndereco = document.getElementById('endereco-entrega-aviso');
   if (c.tipo === 'entrega' && c.endereco_entrega) {
-    elEndereco.textContent = `📍 ${c.endereco_entrega}`;
+    const telefoneTexto = c.telefone_contato ? ` · 📞 ${c.telefone_contato}` : '';
+    elEndereco.textContent = `📍 ${c.endereco_entrega}${telefoneTexto}`;
     elEndereco.style.display = 'block';
   } else {
     elEndereco.style.display = 'none';
