@@ -195,4 +195,55 @@ async function salvarConfiguracoes() {
   await carregarEstabelecimento();
 }
 
+// ------------------------------------------------------------
+// Minha Conta — trocar meu próprio username/senha
+// ------------------------------------------------------------
+async function salvarMinhaConta() {
+  const novoUsername = document.getElementById('input-minha-conta-username').value.trim().toLowerCase();
+  const novaSenha = document.getElementById('input-minha-conta-senha').value;
+
+  if (!novoUsername) {
+    mostrarToast('Digite o novo usuário.', 'erro');
+    return;
+  }
+  if (novaSenha && novaSenha.length < 6) {
+    mostrarToast('Senha precisa ter pelo menos 6 caracteres.', 'erro');
+    return;
+  }
+
+  const confirmar = confirm(`Trocar seu login pra "${novoUsername}"${novaSenha ? ' com senha nova' : ''}? Você vai continuar logado agora, mas da próxima vez use o usuário novo.`);
+  if (!confirmar) return;
+
+  try {
+    const { data: sessao } = await supabaseClient.auth.getSession();
+
+    const corpo = { novo_username: novoUsername };
+    if (novaSenha) corpo.nova_senha = novaSenha; // só manda senha se realmente for trocar
+
+    const resposta = await fetch(`${SUPABASE_URL}/functions/v1/atualizar-credenciais`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${sessao.session.access_token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(corpo),
+    });
+
+    const resultado = await resposta.json();
+
+    if (!resposta.ok) {
+      mostrarToast(resultado.erro || 'Erro ao salvar.', 'erro');
+      return;
+    }
+
+    mostrarToast(`Login atualizado pra "${novoUsername}"! Use esse usuário no próximo login.`);
+    sessionStorage.removeItem('comandaflow_perfil');
+    document.getElementById('input-minha-conta-senha').value = '';
+
+  } catch (erro) {
+    console.error(erro);
+    mostrarToast('Erro de conexão.', 'erro');
+  }
+}
+
 iniciar();
