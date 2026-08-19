@@ -16,16 +16,6 @@
 <link rel="stylesheet" href="css/tokens.css">
 <style>
   html { height: 100%; }
-  body { display: flex; flex-direction: column; height: 100vh; height: 100dvh; overflow: hidden; }
-
-  .topbar {
-    padding: calc(14px + env(safe-area-inset-top)) 20px 14px;
-    display: flex; justify-content: space-between; align-items: center;
-    border-bottom: 1px solid var(--ink-line); flex-shrink: 0;
-  }
-  .topbar .brand { font-family: var(--font-display); font-weight: 800; font-size: 16px; color: var(--crust); }
-  .topbar .usuario { font-size: 12px; color: var(--text-muted); }
-  .topbar .usuario button { color: var(--paprika); font-size: 12px; margin-left: 8px; text-decoration: underline; }
 
   /* ---- Tela: lista de comandas ---- */
   #tela-comandas { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
@@ -113,15 +103,11 @@
   #btn-fechar-conta:disabled { opacity: .4; }
 </style>
 </head>
-<body>
+<body class="app-shell">
 
-<div class="topbar">
-  <span class="brand">ComandaFlow · Caixa</span>
-  <span class="usuario">
-    <span id="nome-usuario">—</span>
-    <button onclick="fazerLogout()">saír</button>
-  </span>
-</div>
+<div id="sidebar"></div>
+
+<div class="main-area">
 
 <!-- TELA 1: lista de comandas -->
 <div id="tela-comandas">
@@ -183,5 +169,8 @@
 <script src="js/supabase-client.js"></script>
 <script src="js/auth.js"></script>
 <script src="js/caixa.js"></script>
+
+</div> <!-- fecha .main-area -->
+
 </body>
 </html>
