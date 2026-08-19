@@ -78,6 +78,29 @@
   .btn-novo-item { padding: 9px 18px; width: auto; }
   .aviso-vazio-pequeno { color: var(--text-faint); font-size: 13px; padding: 4px 0; }
 
+  /* ---- Ingredientes (painel principal) ---- */
+  .ingredientes-grid { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 4px; }
+  .ingrediente-chip {
+    display: flex; align-items: center; gap: 8px;
+    background: var(--ink); border: 1px solid var(--ink-line); border-radius: 20px;
+    padding: 6px 8px 6px 14px; font-size: 12.5px;
+  }
+  .ingrediente-chip.indisponivel { opacity: .45; }
+  .switch-mini { width: 30px; height: 18px; }
+  .switch-mini .switch-slider::before { height: 12px; width: 12px; left: 3px; bottom: 3px; }
+  .switch-mini input:checked + .switch-slider::before { transform: translateX(12px); }
+
+  /* ---- Ingredientes dentro do modal do item ---- */
+  .lista-ingredientes-modal {
+    max-height: 220px; overflow-y: auto; border: 1px solid var(--ink-line); border-radius: var(--radius-sm);
+    padding: 10px 12px; margin-bottom: 16px;
+  }
+  .ingrediente-modal-linha { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 6px 0; }
+  .ingrediente-modal-check { display: flex; align-items: center; gap: 8px; font-size: 13px; flex: 1; cursor: pointer; }
+  .ingrediente-modal-check input { width: auto; }
+  .ingrediente-modal-preco { width: 80px; flex-shrink: 0; padding: 6px 8px; font-size: 12.5px; }
+  .ingrediente-modal-preco:disabled { opacity: .3; }
+
   /* ---- Modal item ---- */
   #modal-item-overlay {
     display: none; position: fixed; inset: 0; background: rgba(0,0,0,.6);
@@ -112,6 +135,15 @@
     <div class="linha-nova-categoria">
       <input type="text" id="input-nova-categoria" placeholder="Nome da nova categoria">
       <button class="btn-primary" onclick="criarNovaCategoria()">+ Adicionar</button>
+    </div>
+  </div>
+
+  <div class="painel">
+    <div class="painel-header"><h3>Ingredientes / Sabores</h3></div>
+    <div id="lista-ingredientes" class="ingredientes-grid"></div>
+    <div class="linha-nova-categoria">
+      <input type="text" id="input-novo-ingrediente" placeholder="Nome do novo ingrediente/sabor">
+      <button class="btn-primary" onclick="criarNovoIngrediente()">+ Adicionar</button>
     </div>
   </div>
 
@@ -169,6 +201,11 @@
     <div class="campo-checkbox">
       <input type="checkbox" id="input-item-disponivel" checked>
       <label for="input-item-disponivel" style="margin:0;">Disponível pro atendente lançar</label>
+    </div>
+
+    <div id="secao-ingredientes-item" style="display:none;">
+      <label id="label-ingredientes-item" style="display:block; font-size:12px; color:var(--text-muted); margin-bottom:8px;"></label>
+      <div id="lista-ingredientes-modal" class="lista-ingredientes-modal"></div>
     </div>
 
     <div class="modal-botoes">
