@@ -273,6 +273,7 @@ async function abrirNovaComandaEntrega() {
     telefone_contato: telefone || null,
     endereco_entrega: endereco,
     taxa_entrega: taxaEntrega,
+    status_entrega: 'preparando',
   });
 
   document.getElementById('input-entrega-nome-cliente').value = '';

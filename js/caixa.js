@@ -77,6 +77,12 @@ function tempoAberta(dataIso) {
   return `há ${horas}h${minutos % 60 > 0 ? (minutos % 60) + 'min' : ''}`;
 }
 
+const ROTULO_ESTAGIO_ENTREGA = {
+  preparando: { texto: '🟡 Preparando', classe: 'preparando' },
+  saiu_entrega: { texto: '🔵 Saiu pra entrega', classe: 'saiu' },
+  entregue: { texto: '🟢 Entregue', classe: 'entregue' },
+};
+
 function renderComandas() {
   const grid = document.getElementById('grid-comandas');
   const contador = document.getElementById('contador-comandas');
@@ -87,21 +93,48 @@ function renderComandas() {
     return;
   }
 
-  grid.innerHTML = estado.comandas.map(c => `
-    <button class="ticket-card" onclick="abrirFechamento('${c.id}')">
+  grid.innerHTML = estado.comandas.map(c => {
+    const ehEntrega = c.tipo === 'entrega';
+    const estagio = ehEntrega ? ROTULO_ESTAGIO_ENTREGA[c.status_entrega || 'preparando'] : null;
+
+    // Se já saiu pra entrega, clicar no card não reabre o fechamento inteiro —
+    // só pede confirmação rápida de "voltou e entregou"
+    const acaoClick = (ehEntrega && c.status_entrega === 'saiu_entrega')
+      ? `confirmarEntregaRealizada('${c.id}')`
+      : `abrirFechamento('${c.id}')`;
+
+    return `
+    <button class="ticket-card" onclick="${acaoClick}">
       <div class="ticket-row1">
         <span class="badge">${rotuloComanda(c)}</span>
         <span class="dot"></span>
       </div>
       <div class="ticket-numero">Comanda #${c.numero_sequencial}</div>
       <div class="ticket-tempo">${tempoAberta(c.aberta_em)}</div>
+      ${estagio ? `<div class="estagio-entrega ${estagio.classe}">${estagio.texto}</div>` : ''}
       <div class="ticket-divisor"></div>
       <div class="ticket-total-row">
         <span class="label">parcial</span>
         <span class="valor">R$ ${Number(c.total_parcial).toFixed(2).replace('.', ',')}</span>
       </div>
     </button>
-  `).join('');
+  `;
+  }).join('');
+}
+
+async function confirmarEntregaRealizada(comandaId) {
+  const confirmar = confirm('Confirma que o motoboy voltou e a entrega foi realizada? Isso vai fechar a conta de verdade.');
+  if (!confirmar) return;
+
+  const { error } = await supabaseClient
+    .from('comandas')
+    .update({ status_entrega: 'entregue', status: 'fechada', fechada_em: new Date().toISOString() })
+    .eq('id', comandaId);
+
+  if (error) { mostrarToast('Erro ao confirmar entrega.', 'erro'); return; }
+
+  mostrarToast('Entrega confirmada e conta fechada!');
+  await carregarComandas();
 }
 
 // ------------------------------------------------------------
@@ -198,6 +231,13 @@ function renderFechamento() {
   document.getElementById('valor-subtotal').textContent = `R$ ${subtotal.toFixed(2).replace('.', ',')}`;
   document.getElementById('valor-taxa-servico').textContent = `R$ ${taxaValor.toFixed(2).replace('.', ',')}`;
   document.getElementById('valor-total').textContent = `R$ ${total.toFixed(2).replace('.', ',')}`;
+
+  // Se for comanda de entrega ainda não despachada, o botão final não "fecha"
+  // de vez — só define a forma de pagamento e avança pra "saiu pra entrega"
+  const ehSaidaEntrega = comanda.tipo === 'entrega' && comanda.status_entrega !== 'entregue';
+  document.getElementById('btn-fechar-conta').textContent = ehSaidaEntrega
+    ? 'Confirmar saída pra entrega'
+    : 'Fechar conta';
 
   renderPagamentos();
 }
@@ -394,11 +434,19 @@ function atualizarValorPagamento(index, valor) {
 
 function renderPagamentos() {
   const lista = document.getElementById('lista-pagamentos');
+  const { comanda } = estado.comandaEmFechamento;
+  const ehEntrega = comanda.tipo === 'entrega';
 
   if (estado.pagamentos.length === 0) {
     lista.innerHTML = '<div class="aviso-vazio-pequeno">Nenhuma forma de pagamento adicionada</div>';
   } else {
-    lista.innerHTML = estado.pagamentos.map((p, i) => `
+    lista.innerHTML = estado.pagamentos.map((p, i) => {
+      // Só mostra calculadora de troco pra pagamento em dinheiro, e só quando
+      // for entrega (é o cenário que realmente precisa avisar o motoboy)
+      const mostrarTroco = ehEntrega && p.forma === 'dinheiro';
+      const troco = mostrarTroco ? round2((p.valorRecebido || 0) - p.valor) : 0;
+
+      return `
       <div class="pagamento-linha">
         <select onchange="atualizarFormaPagamento(${i}, this.value)">
           <option value="dinheiro" ${p.forma === 'dinheiro' ? 'selected' : ''}>Dinheiro</option>
@@ -409,10 +457,25 @@ function renderPagamentos() {
         <input type="text" inputmode="decimal" value="${p.valor.toString().replace('.', ',')}" oninput="atualizarValorPagamento(${i}, this.value)">
         <button class="btn-remover" onclick="removerPagamento(${i})">✕</button>
       </div>
-    `).join('');
+      ${mostrarTroco ? `
+        <div class="troco-linha">
+          <label>Cliente vai pagar com quanto?</label>
+          <input type="text" inputmode="decimal" placeholder="Ex: 50,00"
+                 value="${p.valorRecebido ? p.valorRecebido.toString().replace('.', ',') : ''}"
+                 oninput="atualizarValorRecebido(${i}, this.value)">
+          ${p.valorRecebido ? `<span class="troco-resultado">Troco: R$ ${troco.toFixed(2).replace('.', ',')}</span>` : ''}
+        </div>
+      ` : ''}
+      `;
+    }).join('');
   }
 
   renderResumoPagamento();
+}
+
+function atualizarValorRecebido(index, valor) {
+  estado.pagamentos[index].valorRecebido = paraNumero(valor);
+  renderPagamentos();
 }
 
 function renderResumoPagamento() {
@@ -435,10 +498,11 @@ function renderResumoPagamento() {
 async function confirmarFechamento() {
   const { comanda } = estado.comandaEmFechamento;
   const { subtotal, taxaValor, total } = calcularValores();
+  const ehSaidaEntrega = comanda.tipo === 'entrega' && comanda.status_entrega !== 'entregue';
 
   const btn = document.getElementById('btn-fechar-conta');
   btn.disabled = true;
-  btn.textContent = 'Fechando...';
+  btn.textContent = ehSaidaEntrega ? 'Confirmando saída...' : 'Fechando...';
 
   try {
     const { data: fechamento, error: erroFechamento } = await supabaseClient
@@ -461,25 +525,39 @@ async function confirmarFechamento() {
       fechamento_id: fechamento.id,
       forma_pagamento: p.forma,
       valor: p.valor,
+      valor_recebido: p.forma === 'dinheiro' && p.valorRecebido ? p.valorRecebido : null,
     }));
 
     const { error: erroPagamentos } = await supabaseClient.from('pagamentos').insert(linhasPagamento);
     if (erroPagamentos) throw erroPagamentos;
 
-    const { error: erroComanda } = await supabaseClient
-      .from('comandas')
-      .update({ status: 'fechada', fechada_em: new Date().toISOString() })
-      .eq('id', comanda.id);
-    if (erroComanda) throw erroComanda;
+    if (ehSaidaEntrega) {
+      // Não fecha de vez — só avança pro estágio "saiu pra entrega".
+      // A comanda continua "aberta" até o motoboy voltar e confirmar.
+      const { error: erroComanda } = await supabaseClient
+        .from('comandas')
+        .update({ status_entrega: 'saiu_entrega' })
+        .eq('id', comanda.id);
+      if (erroComanda) throw erroComanda;
 
-    mostrarToast('Conta fechada com sucesso! 🎉');
+      mostrarToast('Saiu pra entrega! Cupom com a forma de pagamento vai ser impresso. 🛵');
+    } else {
+      const { error: erroComanda } = await supabaseClient
+        .from('comandas')
+        .update({ status: 'fechada', fechada_em: new Date().toISOString() })
+        .eq('id', comanda.id);
+      if (erroComanda) throw erroComanda;
+
+      mostrarToast('Conta fechada com sucesso! 🎉');
+    }
+
     fecharTelaFechamento();
 
   } catch (erro) {
     console.error(erro);
-    mostrarToast('Erro ao fechar conta. Tente de novo.', 'erro');
+    mostrarToast('Erro ao processar. Tente de novo.', 'erro');
     btn.disabled = false;
-    btn.textContent = 'Fechar conta';
+    btn.textContent = ehSaidaEntrega ? 'Confirmar saída pra entrega' : 'Fechar conta';
   }
 }
 
