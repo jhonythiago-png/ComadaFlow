@@ -92,6 +92,7 @@
   <div class="abas">
     <button class="aba-botao on" id="botao-aba-funcionarios" onclick="mostrarAba('funcionarios')">Funcionários</button>
     <button class="aba-botao" id="botao-aba-configuracoes" onclick="mostrarAba('configuracoes')">Configurações</button>
+    <button class="aba-botao" id="botao-aba-minhaconta" onclick="mostrarAba('minhaconta')">Minha Conta</button>
   </div>
 
   <!-- ABA: Funcionários -->
@@ -131,6 +132,27 @@
       </div>
 
       <button class="btn-primary" onclick="salvarConfiguracoes()">Salvar configurações</button>
+    </div>
+  </div>
+
+  <!-- ABA: Minha Conta -->
+  <div class="aba-conteudo" id="aba-minhaconta" style="display:none;">
+    <div class="painel">
+      <div class="painel-header"><h3>Trocar meu usuário/senha</h3></div>
+      <p style="font-size:12px; color:var(--text-muted); margin-bottom:16px;">
+        Isso troca só o SEU próprio login — não afeta outros funcionários.
+      </p>
+
+      <div class="campo">
+        <label>Novo usuário</label>
+        <input type="text" id="input-minha-conta-username" autocapitalize="none">
+      </div>
+      <div class="campo">
+        <label>Nova senha (mínimo 6 caracteres)</label>
+        <input type="password" id="input-minha-conta-senha" placeholder="Deixe em branco pra não mudar a senha">
+      </div>
+
+      <button class="btn-primary" onclick="salvarMinhaConta()">Salvar minhas credenciais</button>
     </div>
   </div>
 
