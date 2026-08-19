@@ -205,6 +205,16 @@
     </div>
   </div>
 
+  <div class="bloco-nova-comanda" id="bloco-nova-comanda-entrega" style="display:none;">
+    <h3>Nova comanda de entrega</h3>
+    <input type="text" id="input-entrega-nome-cliente" placeholder="Nome do cliente" style="margin-bottom:8px;">
+    <input type="text" id="input-entrega-endereco" placeholder="Endereço de entrega" style="margin-bottom:8px;">
+    <div class="linha">
+      <input type="text" inputmode="decimal" id="input-entrega-taxa" placeholder="Taxa de entrega (R$, opcional)">
+      <button class="btn-primary" style="flex-shrink:0; padding:12px 18px;" onclick="abrirNovaComandaEntrega()">Abrir</button>
+    </div>
+  </div>
+
   <div>
     <h3 style="font-family: var(--font-display); font-size: 15px; margin-bottom: 12px;">Comandas abertas</h3>
     <div id="lista-comandas-abertas"><div class="aviso-vazio">Carregando...</div></div>
@@ -221,6 +231,7 @@
     </div>
     <button class="voltar" onclick="abrirPedidosEnviados()" title="Ver pedidos já enviados">📋</button>
   </div>
+  <div id="endereco-entrega-aviso" style="display:none; padding:8px 16px; background:var(--ink-soft); font-size:12px; color:var(--crust); text-align:center; border-bottom:1px solid var(--ink-line);"></div>
 
   <div id="nav-categorias"></div>
   <div id="grid-itens"></div>
