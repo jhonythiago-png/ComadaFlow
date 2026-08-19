@@ -15,6 +15,29 @@ function alternarMostrarSenha(idCampo, botao) {
   botao.textContent = mostrando ? '👁' : '🙈';
 }
 
+// ------------------------------------------------------------
+// Modal de confirmação genérico — substitui o confirm() nativo,
+// que não é confiável em apps salvos na tela inicial do iPhone
+// ------------------------------------------------------------
+let acaoConfirmacaoPendente = null;
+
+function mostrarConfirmacaoGenerica(mensagem, aoConfirmar) {
+  document.getElementById('confirmacao-generica-texto').textContent = mensagem;
+  acaoConfirmacaoPendente = aoConfirmar;
+  document.getElementById('modal-confirmacao-generica-overlay').style.display = 'flex';
+}
+
+function fecharModalConfirmacaoGenerica() {
+  document.getElementById('modal-confirmacao-generica-overlay').style.display = 'none';
+  acaoConfirmacaoPendente = null;
+}
+
+async function executarConfirmacaoGenerica() {
+  const acao = acaoConfirmacaoPendente;
+  fecharModalConfirmacaoGenerica();
+  if (acao) await acao();
+}
+
 async function iniciar() {
   estado.perfil = await verificarAutenticacao();
   if (!estado.perfil) return;
@@ -80,6 +103,8 @@ function renderFuncionarios() {
           <button class="btn-toggle-status" onclick="alternarStatusFuncionario('${f.id}', ${!f.ativo})">
             ${f.ativo ? 'Desativar' : 'Ativar'}
           </button>
+          <button class="btn-editar-func" onclick="abrirModalEditarFuncionario('${f.id}')">Editar</button>
+          <button class="btn-excluir-func" onclick="confirmarExcluirFuncionario('${f.id}', '${f.nome.replace(/'/g, "\\'")}')">Excluir</button>
         ` : ''}
       </div>
     </div>
@@ -96,6 +121,114 @@ async function alternarStatusFuncionario(perfilId, novoStatus) {
 
   mostrarToast(novoStatus ? 'Funcionário reativado.' : 'Funcionário desativado.');
   await carregarFuncionarios();
+}
+
+// ------------------------------------------------------------
+// Editar funcionário (nome, usuário, senha)
+// ------------------------------------------------------------
+function abrirModalEditarFuncionario(perfilId) {
+  const f = estado.funcionarios.find(x => x.id === perfilId);
+  if (!f) return;
+
+  document.getElementById('input-editar-func-id').value = f.id;
+  document.getElementById('input-editar-func-nome').value = f.nome;
+  document.getElementById('input-editar-func-username').value = f.username;
+  document.getElementById('input-editar-func-senha').value = '';
+  document.getElementById('input-editar-func-senha-confirmar').value = '';
+  document.getElementById('modal-editar-funcionario-overlay').style.display = 'flex';
+}
+
+function fecharModalEditarFuncionario() {
+  document.getElementById('modal-editar-funcionario-overlay').style.display = 'none';
+}
+
+async function salvarEdicaoFuncionario() {
+  const perfilId = document.getElementById('input-editar-func-id').value;
+  const novoNome = formatarTitulo(document.getElementById('input-editar-func-nome').value.trim());
+  const novoUsername = document.getElementById('input-editar-func-username').value.trim().toLowerCase();
+  const novaSenha = document.getElementById('input-editar-func-senha').value;
+  const novaSenhaConfirmar = document.getElementById('input-editar-func-senha-confirmar').value;
+
+  if (!novoNome || !novoUsername) {
+    mostrarToast('Preenche nome e usuário.', 'erro');
+    return;
+  }
+  if (novaSenha && novaSenha.length < 6) {
+    mostrarToast('Senha precisa ter pelo menos 6 caracteres.', 'erro');
+    return;
+  }
+  if (novaSenha && novaSenha !== novaSenhaConfirmar) {
+    mostrarToast('As senhas não são iguais. Confere de novo.', 'erro');
+    return;
+  }
+
+  try {
+    const { data: sessao } = await supabaseClient.auth.getSession();
+
+    const corpo = { acao: 'editar', funcionario_perfil_id: perfilId, novo_nome: novoNome, novo_username: novoUsername };
+    if (novaSenha) corpo.nova_senha = novaSenha;
+
+    const resposta = await fetch(`${SUPABASE_URL}/functions/v1/gerenciar-funcionario`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${sessao.session.access_token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(corpo),
+    });
+
+    const resultado = await resposta.json();
+
+    if (!resposta.ok) {
+      mostrarToast(resultado.erro || 'Erro ao salvar.', 'erro');
+      return;
+    }
+
+    mostrarToast('Funcionário atualizado!');
+    fecharModalEditarFuncionario();
+    await carregarFuncionarios();
+
+  } catch (erro) {
+    console.error(erro);
+    mostrarToast('Erro de conexão.', 'erro');
+  }
+}
+
+// ------------------------------------------------------------
+// Excluir funcionário (de vez, libera o username pra reuso)
+// ------------------------------------------------------------
+function confirmarExcluirFuncionario(perfilId, nome) {
+  mostrarConfirmacaoGenerica(
+    `Excluir "${nome}" de vez? O login dele deixa de existir — diferente de "desativar", isso libera o nome de usuário pra criar outra pessoa com o mesmo username.`,
+    async () => {
+      try {
+        const { data: sessao } = await supabaseClient.auth.getSession();
+
+        const resposta = await fetch(`${SUPABASE_URL}/functions/v1/gerenciar-funcionario`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${sessao.session.access_token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ acao: 'excluir', funcionario_perfil_id: perfilId }),
+        });
+
+        const resultado = await resposta.json();
+
+        if (!resposta.ok) {
+          mostrarToast(resultado.erro || 'Erro ao excluir.', 'erro');
+          return;
+        }
+
+        mostrarToast('Funcionário excluído.');
+        await carregarFuncionarios();
+
+      } catch (erro) {
+        console.error(erro);
+        mostrarToast('Erro de conexão.', 'erro');
+      }
+    }
+  );
 }
 
 function abrirModalFuncionario() {
