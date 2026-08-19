@@ -8,6 +8,13 @@ const estado = {
   funcionarios: [],
 };
 
+function alternarMostrarSenha(idCampo, botao) {
+  const campo = document.getElementById(idCampo);
+  const mostrando = campo.type === 'text';
+  campo.type = mostrando ? 'password' : 'text';
+  botao.textContent = mostrando ? '👁' : '🙈';
+}
+
 async function iniciar() {
   estado.perfil = await verificarAutenticacao();
   if (!estado.perfil) return;
@@ -106,6 +113,7 @@ async function salvarNovoFuncionario() {
   const nome = formatarTitulo(document.getElementById('input-func-nome').value.trim());
   const username = document.getElementById('input-func-username').value.trim().toLowerCase();
   const senha = document.getElementById('input-func-senha').value;
+  const senhaConfirmar = document.getElementById('input-func-senha-confirmar').value;
 
   if (!nome || !username || !senha) {
     mostrarToast('Preenche nome, usuário e senha.', 'erro');
@@ -113,6 +121,10 @@ async function salvarNovoFuncionario() {
   }
   if (senha.length < 6) {
     mostrarToast('Senha precisa ter pelo menos 6 caracteres.', 'erro');
+    return;
+  }
+  if (senha !== senhaConfirmar) {
+    mostrarToast('As senhas não são iguais. Confere de novo.', 'erro');
     return;
   }
 
@@ -201,6 +213,7 @@ async function salvarConfiguracoes() {
 async function salvarMinhaConta() {
   const novoUsername = document.getElementById('input-minha-conta-username').value.trim().toLowerCase();
   const novaSenha = document.getElementById('input-minha-conta-senha').value;
+  const novaSenhaConfirmar = document.getElementById('input-minha-conta-senha-confirmar').value;
 
   if (!novoUsername) {
     mostrarToast('Digite o novo usuário.', 'erro');
@@ -208,6 +221,10 @@ async function salvarMinhaConta() {
   }
   if (novaSenha && novaSenha.length < 6) {
     mostrarToast('Senha precisa ter pelo menos 6 caracteres.', 'erro');
+    return;
+  }
+  if (novaSenha && novaSenha !== novaSenhaConfirmar) {
+    mostrarToast('As senhas não são iguais. Confere de novo.', 'erro');
     return;
   }
 
