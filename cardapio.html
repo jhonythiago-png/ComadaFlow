@@ -86,9 +86,21 @@
     padding: 6px 8px 6px 14px; font-size: 12.5px;
   }
   .ingrediente-chip.indisponivel { opacity: .45; }
+  .ingrediente-nome-clicavel { cursor: pointer; }
   .switch-mini { width: 30px; height: 18px; }
   .switch-mini .switch-slider::before { height: 12px; width: 12px; left: 3px; bottom: 3px; }
   .switch-mini input:checked + .switch-slider::before { transform: translateX(12px); }
+
+  #modal-ingrediente-overlay {
+    display: none; position: fixed; inset: 0; background: rgba(0,0,0,.6);
+    align-items: center; justify-content: center; z-index: 100; padding: 20px;
+  }
+  #modal-ingrediente-conteudo {
+    background: var(--ink); border-radius: var(--radius-lg); padding: 22px;
+    width: 100%; max-width: 360px;
+  }
+  #modal-ingrediente-conteudo h3 { font-family: var(--font-display); margin-bottom: 16px; }
+  #btn-excluir-ingrediente { color: var(--paprika); font-size: 12px; text-decoration: underline; margin-top: 14px; display: block; text-align: center; }
 
   /* ---- Ingredientes dentro do modal do item ---- */
   .lista-ingredientes-modal {
@@ -213,6 +225,28 @@
       <button class="btn-primary" onclick="salvarItem()">Salvar</button>
     </div>
     <button id="btn-excluir-item" onclick="excluirItem()">Excluir este item</button>
+  </div>
+</div>
+
+<!-- MODAL: editar ingrediente -->
+<div id="modal-ingrediente-overlay">
+  <div id="modal-ingrediente-conteudo">
+    <h3>Editar ingrediente</h3>
+
+    <div class="campo">
+      <label>Nome</label>
+      <input type="text" id="input-edit-ingrediente-nome">
+    </div>
+    <div class="campo-checkbox">
+      <input type="checkbox" id="input-edit-ingrediente-disponivel">
+      <label for="input-edit-ingrediente-disponivel" style="margin:0;">Disponível</label>
+    </div>
+
+    <div class="modal-botoes">
+      <button class="btn-ghost" onclick="fecharModalIngrediente()">Cancelar</button>
+      <button class="btn-primary" onclick="salvarIngrediente()">Salvar</button>
+    </div>
+    <button id="btn-excluir-ingrediente" onclick="excluirIngrediente()">Excluir este ingrediente</button>
   </div>
 </div>
 
