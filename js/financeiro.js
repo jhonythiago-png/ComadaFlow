@@ -38,7 +38,6 @@ async function iniciar() {
     return;
   }
 
-  document.getElementById('nome-usuario').textContent = estado.perfil.nome;
   injetarNavegacao(estado.perfil, 'financeiro');
   selecionarPeriodo('hoje');
   await carregarDespesas();

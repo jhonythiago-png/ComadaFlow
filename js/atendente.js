@@ -23,7 +23,7 @@ async function iniciar() {
   estado.perfil = await verificarAutenticacao();
   if (!estado.perfil) return;
 
-  document.getElementById('nome-usuario').textContent = estado.perfil.nome;
+  injetarNavegacao(estado.perfil, 'atendente');
 
   await carregarCardapio();
   await carregarComandasAbertas();
