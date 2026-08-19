@@ -8,6 +8,7 @@ const estado = {
   dataInicio: null,
   dataFim: null,
   despesas: [],
+  sangrias: [],
 };
 
 const NOMES_CATEGORIA = {
@@ -41,6 +42,7 @@ async function iniciar() {
   injetarNavegacao(estado.perfil, 'financeiro');
   selecionarPeriodo('hoje');
   await carregarDespesas();
+  await carregarSangrias();
 }
 
 // ------------------------------------------------------------
@@ -319,6 +321,84 @@ async function salvarDespesa() {
   fecharModalDespesa();
   await carregarDespesas();
   carregarRelatorios();
+}
+
+// ------------------------------------------------------------
+// Sangria de caixa
+// ------------------------------------------------------------
+async function carregarSangrias() {
+  const { data, error } = await supabaseClient
+    .from('sangrias')
+    .select('*')
+    .eq('estabelecimento_id', estado.perfil.estabelecimento_id)
+    .order('criado_em', { ascending: false })
+    .limit(30);
+
+  if (error) { console.error(error); return; }
+
+  estado.sangrias = data || [];
+  renderSangrias();
+}
+
+function renderSangrias() {
+  const container = document.getElementById('lista-sangrias');
+
+  if (!estado.sangrias || estado.sangrias.length === 0) {
+    container.innerHTML = '<div class="aviso-vazio-pequeno">Nenhuma sangria registrada ainda.</div>';
+    return;
+  }
+
+  container.innerHTML = estado.sangrias.map(s => {
+    const data = new Date(s.criado_em);
+    const dataTexto = data.toLocaleDateString('pt-BR') + ' às ' + data.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+    return `
+      <div class="sangria-linha">
+        <div>
+          <div class="sangria-descricao">${s.motivo || 'Sangria de caixa'}</div>
+          <div class="sangria-detalhe">${dataTexto}</div>
+        </div>
+        <span class="sangria-valor">- ${formatarMoeda(s.valor)}</span>
+      </div>
+    `;
+  }).join('');
+}
+
+function abrirModalSangria() {
+  document.getElementById('input-sangria-valor').value = '';
+  document.getElementById('input-sangria-motivo').value = '';
+  document.getElementById('modal-sangria-overlay').style.display = 'flex';
+}
+
+function fecharModalSangria() {
+  document.getElementById('modal-sangria-overlay').style.display = 'none';
+}
+
+async function salvarSangria() {
+  const valorTexto = document.getElementById('input-sangria-valor').value;
+  const motivo = document.getElementById('input-sangria-motivo').value.trim();
+  const valor = parseFloat(valorTexto.replace(',', '.'));
+
+  if (!valor || valor <= 0) {
+    mostrarToast('Digite um valor válido.', 'erro');
+    return;
+  }
+
+  const { error } = await supabaseClient.from('sangrias').insert({
+    estabelecimento_id: estado.perfil.estabelecimento_id,
+    valor,
+    motivo: motivo || null,
+    criado_por: estado.perfil.id,
+  });
+
+  if (error) {
+    mostrarToast('Erro ao registrar sangria.', 'erro');
+    console.error(error);
+    return;
+  }
+
+  mostrarToast('Sangria registrada!');
+  fecharModalSangria();
+  await carregarSangrias();
 }
 
 iniciar();

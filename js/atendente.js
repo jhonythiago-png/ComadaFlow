@@ -65,8 +65,8 @@ async function verificarAtualizacoes() {
       .eq('id', estado.comandaAtual.id)
       .single();
 
-    if (!error && data?.status === 'fechada') {
-      mostrarToast('Essa comanda foi fechada pelo caixa.');
+    if (!error && data?.status && data.status !== 'aberta') {
+      mostrarToast(data.status === 'cancelada' ? 'Essa comanda foi cancelada.' : 'Essa comanda foi fechada pelo caixa.');
       voltarParaComandas();
     }
   }
@@ -103,9 +103,9 @@ function escutarMudancasComandas() {
         if (
           estado.comandaAtual &&
           payload.new?.id === estado.comandaAtual.id &&
-          payload.new?.status === 'fechada'
+          payload.new?.status && payload.new.status !== 'aberta'
         ) {
-          mostrarToast('Essa comanda foi fechada pelo caixa.');
+          mostrarToast(payload.new.status === 'cancelada' ? 'Essa comanda foi cancelada.' : 'Essa comanda foi fechada pelo caixa.');
           voltarParaComandas();
           return;
         }
@@ -776,29 +776,32 @@ async function cancelarItemEnviado(pedidoItemId) {
   if (!item) return;
 
   const nomeItem = `${item.quantidade}× ${item.itens_cardapio.nome}`;
-  const confirmar = confirm(`Cancelar "${nomeItem}"? A cozinha será avisada pra não produzir (ou parar, se já estiver em andamento).`);
-  if (!confirmar) return;
 
-  const { error: erroCancelar } = await supabaseClient
-    .from('pedido_itens')
-    .update({ status: 'cancelado' })
-    .eq('id', pedidoItemId);
+  mostrarConfirmacaoGenerica(
+    `Cancelar "${nomeItem}"? A cozinha será avisada pra não produzir (ou parar, se já estiver em andamento).`,
+    async () => {
+      const { error: erroCancelar } = await supabaseClient
+        .from('pedido_itens')
+        .update({ status: 'cancelado' })
+        .eq('id', pedidoItemId);
 
-  if (erroCancelar) {
-    mostrarToast('Erro ao cancelar item.', 'erro');
-    return;
-  }
+      if (erroCancelar) {
+        mostrarToast('Erro ao cancelar item.', 'erro');
+        return;
+      }
 
-  // Reimprime o pedido da cozinha atualizado (sem o item cancelado),
-  // pra cozinha ver exatamente o que continua valendo
-  await supabaseClient.from('solicitacoes_impressao').insert({
-    comanda_id: estado.comandaAtual.id,
-    tipo: 'pedido_atualizado',
-    criado_por: estado.perfil.id,
-  });
+      // Reimprime o pedido da cozinha atualizado (sem o item cancelado),
+      // pra cozinha ver exatamente o que continua valendo
+      await supabaseClient.from('solicitacoes_impressao').insert({
+        comanda_id: estado.comandaAtual.id,
+        tipo: 'pedido_atualizado',
+        criado_por: estado.perfil.id,
+      });
 
-  mostrarToast('Item cancelado e cozinha avisada.');
-  abrirPedidosEnviados(); // recarrega a lista
+      mostrarToast('Item cancelado e cozinha avisada.');
+      abrirPedidosEnviados(); // recarrega a lista
+    }
+  );
 }
 
 async function imprimirConferencia() {
@@ -817,6 +820,63 @@ async function imprimirConferencia() {
 
 function fecharPedidosEnviados() {
   document.getElementById('modal-pedidos-overlay').style.display = 'none';
+}
+
+// ------------------------------------------------------------
+// Cancelar comanda inteira (cliente desistiu antes de fechar)
+// ------------------------------------------------------------
+function abrirConfirmacaoCancelarComanda() {
+  mostrarConfirmacaoGenerica(
+    `Cancelar a comanda inteira "${rotuloComanda(estado.comandaAtual)}"? Todos os itens serão cancelados e ela não vai contar como venda.`,
+    async () => {
+      const comandaId = estado.comandaAtual.id;
+
+      // Cancela todos os itens ainda ativos dessa comanda
+      await supabaseClient
+        .from('pedido_itens')
+        .update({ status: 'cancelado' })
+        .eq('comanda_id', comandaId)
+        .neq('status', 'cancelado');
+
+      // Marca a comanda como cancelada (some da lista, não conta no financeiro)
+      const { error } = await supabaseClient
+        .from('comandas')
+        .update({ status: 'cancelada' })
+        .eq('id', comandaId);
+
+      if (error) {
+        mostrarToast('Erro ao cancelar comanda.', 'erro');
+        return;
+      }
+
+      mostrarToast('Comanda cancelada.');
+      fecharPedidosEnviados();
+      voltarParaComandas();
+    }
+  );
+}
+
+// ------------------------------------------------------------
+// Modal de confirmação genérico — substitui o confirm() nativo,
+// que não é confiável em apps salvos na tela inicial do iPhone
+// ------------------------------------------------------------
+let acaoConfirmacaoPendente = null;
+
+function mostrarConfirmacaoGenerica(mensagem, aoConfirmar) {
+  document.getElementById('confirmacao-generica-texto').textContent = mensagem;
+  acaoConfirmacaoPendente = aoConfirmar;
+  document.getElementById('modal-confirmacao-generica-overlay').style.display = 'flex';
+}
+
+function fecharModalConfirmacaoGenerica() {
+  document.getElementById('modal-confirmacao-generica-overlay').style.display = 'none';
+  acaoConfirmacaoPendente = null;
+}
+
+async function executarConfirmacaoGenerica() {
+  const acao = acaoConfirmacaoPendente;
+  fecharModalConfirmacaoGenerica();
+  if (acao) await acao();
 }
 
 iniciar();
