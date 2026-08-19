@@ -245,7 +245,7 @@ function renderDespesas() {
 
   container.innerHTML = estado.despesas.map(d => `
     <div class="despesa-linha">
-      <div>
+      <div class="despesa-esquerda">
         <div class="despesa-descricao">${d.descricao}</div>
         <div class="despesa-detalhe">${NOMES_CATEGORIA[d.categoria]} · vence ${formatarDataBR(d.data_vencimento)}</div>
       </div>
