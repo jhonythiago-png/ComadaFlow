@@ -121,3 +121,48 @@ input:focus, select:focus, textarea:focus {
 }
 
 .toast.erro { background: var(--paprika); }
+
+/* ============================================================
+   Menu lateral (sidebar) — igual ao padrão Evvo/Treemali:
+   sistema único, menu sempre visível, sem "pular" de página solta.
+   No celular vira uma barra no topo (sidebar não cabe em tela pequena).
+   ============================================================ */
+body.app-shell {
+  display: flex; flex-direction: column;
+  height: 100vh; height: 100dvh; overflow: hidden;
+}
+#sidebar {
+  display: flex; flex-direction: row; align-items: center; justify-content: space-between;
+  gap: 12px; padding: calc(10px + env(safe-area-inset-top)) 16px 10px;
+  border-bottom: 1px solid var(--ink-line); flex-shrink: 0; background: var(--ink);
+}
+#sidebar .sidebar-logo {
+  font-family: var(--font-display); font-weight: 800; font-size: 15px; color: var(--crust);
+  white-space: nowrap;
+}
+#sidebar .sidebar-nav { display: flex; gap: 4px; overflow-x: auto; flex: 1; }
+#sidebar .sidebar-nav-link {
+  font-size: 12.5px; font-weight: 600; padding: 6px 13px; border-radius: 16px;
+  color: var(--text-muted); text-decoration: none; white-space: nowrap; flex-shrink: 0;
+}
+#sidebar .sidebar-nav-link.on { background: var(--ink-line); color: var(--text-primary); }
+#sidebar .sidebar-footer { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-muted); white-space: nowrap; }
+#sidebar .sidebar-footer button { color: var(--paprika); font-size: 12px; text-decoration: underline; }
+
+.main-area { flex: 1; overflow-y: auto; display: flex; flex-direction: column; min-height: 0; }
+
+@media (min-width: 860px) {
+  body.app-shell { flex-direction: row; height: 100vh; }
+  #sidebar {
+    flex-direction: column; align-items: stretch; justify-content: flex-start;
+    width: 220px; height: 100vh; border-bottom: none; border-right: 1px solid var(--ink-line);
+    padding: 24px 16px; flex-shrink: 0;
+  }
+  #sidebar .sidebar-logo { font-size: 17px; margin-bottom: 28px; }
+  #sidebar .sidebar-nav { flex-direction: column; overflow-x: visible; gap: 2px; flex: unset; }
+  #sidebar .sidebar-nav-link { padding: 10px 14px; border-radius: 10px; }
+  #sidebar .sidebar-footer { margin-top: auto; flex-direction: column; align-items: flex-start; gap: 6px; padding-top: 16px; border-top: 1px solid var(--ink-line); }
+  .main-area { height: 100vh; }
+}
+
+
