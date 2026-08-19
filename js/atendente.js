@@ -26,6 +26,7 @@ async function iniciar() {
 
   injetarNavegacao(estado.perfil, 'atendente');
 
+  await carregarConfiguracaoEstabelecimento();
   await carregarCardapio();
   await carregarComandasAbertas();
   escutarMudancasComandas();
@@ -33,6 +34,18 @@ async function iniciar() {
   // Verificação automática a cada 5s — garante que a lista/comanda atual
   // fique sempre atualizada, mesmo se o aviso em tempo real não chegar
   setInterval(verificarAtualizacoes, 5000);
+}
+
+async function carregarConfiguracaoEstabelecimento() {
+  const { data, error } = await supabaseClient
+    .from('estabelecimentos')
+    .select('permite_entrega')
+    .eq('id', estado.perfil.estabelecimento_id)
+    .single();
+
+  if (!error && data?.permite_entrega) {
+    document.getElementById('bloco-nova-comanda-entrega').style.display = 'block';
+  }
 }
 
 async function verificarAtualizacoes() {
@@ -213,13 +226,14 @@ function rotuloComanda(c) {
   if (c.tipo === 'mesa') {
     return c.identificador_pessoa ? `Mesa ${c.numero_mesa} · ${c.identificador_pessoa}` : `Mesa ${c.numero_mesa}`;
   }
+  if (c.tipo === 'entrega') return `Entrega · ${c.nome_cliente || 'sem nome'}`;
   return c.nome_cliente || 'Balcão';
 }
 
 async function selecionarComanda(comandaId) {
   const { data, error } = await supabaseClient
     .from('comandas')
-    .select('id, numero_sequencial, tipo, numero_mesa, nome_cliente, identificador_pessoa')
+    .select('id, numero_sequencial, tipo, numero_mesa, nome_cliente, identificador_pessoa, endereco_entrega')
     .eq('id', comandaId)
     .single();
 
@@ -240,6 +254,28 @@ async function abrirNovaComandaMesa() {
 async function abrirNovaComandaAvulsa() {
   const nomeCliente = document.getElementById('input-nome-cliente').value.trim();
   await criarComanda({ tipo: 'avulsa', nome_cliente: nomeCliente || null });
+}
+
+async function abrirNovaComandaEntrega() {
+  const nomeCliente = document.getElementById('input-entrega-nome-cliente').value.trim();
+  const endereco = document.getElementById('input-entrega-endereco').value.trim();
+  const taxaTexto = document.getElementById('input-entrega-taxa').value;
+
+  if (!nomeCliente) { mostrarToast('Digite o nome do cliente.', 'erro'); return; }
+  if (!endereco) { mostrarToast('Digite o endereço de entrega.', 'erro'); return; }
+
+  const taxaEntrega = parseFloat((taxaTexto || '0').replace(',', '.')) || 0;
+
+  await criarComanda({
+    tipo: 'entrega',
+    nome_cliente: nomeCliente,
+    endereco_entrega: endereco,
+    taxa_entrega: taxaEntrega,
+  });
+
+  document.getElementById('input-entrega-nome-cliente').value = '';
+  document.getElementById('input-entrega-endereco').value = '';
+  document.getElementById('input-entrega-taxa').value = '';
 }
 
 async function criarComanda(dados) {
@@ -278,6 +314,14 @@ function mostrarTelaCardapio() {
   const c = estado.comandaAtual;
   document.getElementById('titulo-comanda').textContent = rotuloComanda(c);
   document.getElementById('codigo-comanda').textContent = `COMANDA #${c.numero_sequencial}`;
+
+  const elEndereco = document.getElementById('endereco-entrega-aviso');
+  if (c.tipo === 'entrega' && c.endereco_entrega) {
+    elEndereco.textContent = `📍 ${c.endereco_entrega}`;
+    elEndereco.style.display = 'block';
+  } else {
+    elEndereco.style.display = 'none';
+  }
 
   renderCarrinho();
 }
