@@ -132,7 +132,18 @@ async function carregarResumoReceitaDespesa() {
     .lte('data_pagamento', estado.dataFim);
 
   const despesasTotal = (despesasPagas || []).reduce((s, d) => s + Number(d.valor), 0);
-  const saldo = receitaTotal - despesasTotal;
+
+  // Ajustes de caixa (sobrou/faltou/retirada) — entram no Saldo, mas NUNCA na Receita
+  const { data: ajustesPeriodo } = await supabaseClient
+    .from('ajustes_caixa')
+    .select('valor, criado_em')
+    .eq('estabelecimento_id', estado.perfil.estabelecimento_id)
+    .gte('criado_em', estado.dataInicio)
+    .lte('criado_em', estado.dataFim + 'T23:59:59');
+
+  const ajustesTotal = (ajustesPeriodo || []).reduce((s, a) => s + Number(a.valor), 0);
+
+  const saldo = receitaTotal - despesasTotal + ajustesTotal;
 
   document.getElementById('card-receita').textContent = formatarMoeda(receitaTotal);
   document.getElementById('card-despesas').textContent = formatarMoeda(despesasTotal);
@@ -324,11 +335,11 @@ async function salvarDespesa() {
 }
 
 // ------------------------------------------------------------
-// Sangria de caixa
+// Ajuste de caixa (sobrou/faltou dinheiro, retiradas)
 // ------------------------------------------------------------
 async function carregarSangrias() {
   const { data, error } = await supabaseClient
-    .from('sangrias')
+    .from('ajustes_caixa')
     .select('*')
     .eq('estabelecimento_id', estado.perfil.estabelecimento_id)
     .order('criado_em', { ascending: false })
@@ -344,26 +355,29 @@ function renderSangrias() {
   const container = document.getElementById('lista-sangrias');
 
   if (!estado.sangrias || estado.sangrias.length === 0) {
-    container.innerHTML = '<div class="aviso-vazio-pequeno">Nenhuma sangria registrada ainda.</div>';
+    container.innerHTML = '<div class="aviso-vazio-pequeno">Nenhum ajuste registrado ainda.</div>';
     return;
   }
 
   container.innerHTML = estado.sangrias.map(s => {
     const data = new Date(s.criado_em);
     const dataTexto = data.toLocaleDateString('pt-BR') + ' às ' + data.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+    const positivo = Number(s.valor) > 0;
+    const sinal = positivo ? '+ ' : '- ';
     return `
       <div class="sangria-linha">
         <div>
-          <div class="sangria-descricao">${s.motivo || 'Sangria de caixa'}</div>
+          <div class="sangria-descricao">${s.motivo || (positivo ? 'Adição de caixa' : 'Retirada de caixa')}</div>
           <div class="sangria-detalhe">${dataTexto}</div>
         </div>
-        <span class="sangria-valor">- ${formatarMoeda(s.valor)}</span>
+        <span class="sangria-valor" style="color:${positivo ? 'var(--ok)' : 'var(--paprika)'}">${sinal}${formatarMoeda(Math.abs(s.valor))}</span>
       </div>
     `;
   }).join('');
 }
 
 function abrirModalSangria() {
+  document.getElementById('input-sangria-tipo').value = 'retirada';
   document.getElementById('input-sangria-valor').value = '';
   document.getElementById('input-sangria-motivo').value = '';
   document.getElementById('modal-sangria-overlay').style.display = 'flex';
@@ -374,31 +388,35 @@ function fecharModalSangria() {
 }
 
 async function salvarSangria() {
+  const tipo = document.getElementById('input-sangria-tipo').value;
   const valorTexto = document.getElementById('input-sangria-valor').value;
   const motivo = document.getElementById('input-sangria-motivo').value.trim();
-  const valor = parseFloat(valorTexto.replace(',', '.'));
+  const valorAbs = parseFloat(valorTexto.replace(',', '.'));
 
-  if (!valor || valor <= 0) {
+  if (!valorAbs || valorAbs <= 0) {
     mostrarToast('Digite um valor válido.', 'erro');
     return;
   }
 
-  const { error } = await supabaseClient.from('sangrias').insert({
+  const valorComSinal = tipo === 'retirada' ? -valorAbs : valorAbs;
+
+  const { error } = await supabaseClient.from('ajustes_caixa').insert({
     estabelecimento_id: estado.perfil.estabelecimento_id,
-    valor,
+    valor: valorComSinal,
     motivo: motivo || null,
     criado_por: estado.perfil.id,
   });
 
   if (error) {
-    mostrarToast('Erro ao registrar sangria.', 'erro');
+    mostrarToast('Erro ao registrar ajuste.', 'erro');
     console.error(error);
     return;
   }
 
-  mostrarToast('Sangria registrada!');
+  mostrarToast('Ajuste registrado!');
   fecharModalSangria();
   await carregarSangrias();
+  carregarRelatorios(); // recalcula o Saldo já incluindo esse ajuste
 }
 
 iniciar();
