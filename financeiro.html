@@ -94,19 +94,22 @@
   .produto-receita { font-family: var(--font-mono); color: var(--crust); text-align: right; font-size: 12.5px; }
 
   /* ---- Despesas ---- */
-  .despesas-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+  .despesas-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; flex-wrap: wrap; gap: 10px; }
   .despesas-header .secao-titulo { margin-bottom: 0; }
   .despesa-linha {
-    display: flex; justify-content: space-between; align-items: center;
+    display: grid; grid-template-columns: 1fr auto; column-gap: 14px; row-gap: 6px; align-items: center;
     background: var(--ink); border: 1px solid var(--ink-line); border-radius: var(--radius-sm);
-    padding: 13px 16px; margin-bottom: 8px; gap: 10px; flex-wrap: wrap;
+    padding: 14px 16px; margin-bottom: 8px;
   }
   .despesa-linha:last-child { margin-bottom: 0; }
-  .despesa-descricao { font-size: 13.5px; font-weight: 600; }
+  .despesa-esquerda { grid-column: 1; min-width: 0; }
+  .despesa-descricao { font-size: 13.5px; font-weight: 600; overflow-wrap: break-word; }
   .despesa-detalhe { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
-  .despesa-direita { display: flex; align-items: center; gap: 12px; }
-  .despesa-valor { font-family: var(--font-mono); font-size: 13.5px; }
-  .despesa-status { font-size: 10px; text-transform: uppercase; padding: 3px 9px; border-radius: 4px; font-weight: 700; }
+  .despesa-direita {
+    grid-column: 2; display: flex; flex-direction: column; align-items: flex-end; gap: 6px; justify-self: end;
+  }
+  .despesa-valor { font-family: var(--font-mono); font-size: 14px; font-weight: 600; white-space: nowrap; }
+  .despesa-status { font-size: 10px; text-transform: uppercase; padding: 3px 9px; border-radius: 4px; font-weight: 700; white-space: nowrap; }
   .despesa-status.pago { background: rgba(92,122,82,.18); color: #9CBF8F; }
   .despesa-status.pendente { background: rgba(214,67,42,.14); color: #F0A08D; }
   .btn-marcar-pago { font-size: 11px; color: var(--crust); text-decoration: underline; white-space: nowrap; }
