@@ -144,7 +144,7 @@ function renderIngredientes() {
 
   container.innerHTML = estado.ingredientes.map(ing => `
     <div class="ingrediente-chip ${!ing.disponivel ? 'indisponivel' : ''}">
-      <span>${ing.nome}</span>
+      <span class="ingrediente-nome-clicavel" onclick="abrirModalIngrediente('${ing.id}')">${ing.nome}</span>
       <label class="switch-disponivel switch-mini" title="Disponível">
         <input type="checkbox" ${ing.disponivel ? 'checked' : ''} onchange="alternarDisponibilidadeIngrediente('${ing.id}', this.checked)">
         <span class="switch-slider"></span>
@@ -175,6 +175,60 @@ async function criarNovoIngrediente() {
 
   document.getElementById('input-novo-ingrediente').value = '';
   mostrarToast('Ingrediente criado!');
+  await carregarIngredientes();
+}
+
+let ingredienteEmEdicaoId = null;
+
+function abrirModalIngrediente(id) {
+  const ing = estado.ingredientes.find(i => i.id === id);
+  if (!ing) return;
+
+  ingredienteEmEdicaoId = id;
+  document.getElementById('input-edit-ingrediente-nome').value = ing.nome;
+  document.getElementById('input-edit-ingrediente-disponivel').checked = ing.disponivel;
+  document.getElementById('modal-ingrediente-overlay').style.display = 'flex';
+}
+
+function fecharModalIngrediente() {
+  document.getElementById('modal-ingrediente-overlay').style.display = 'none';
+  ingredienteEmEdicaoId = null;
+}
+
+async function salvarIngrediente() {
+  const nome = document.getElementById('input-edit-ingrediente-nome').value.trim();
+  const disponivel = document.getElementById('input-edit-ingrediente-disponivel').checked;
+
+  if (!nome) { mostrarToast('Digite o nome do ingrediente.', 'erro'); return; }
+
+  const { error } = await supabaseClient
+    .from('ingredientes')
+    .update({ nome, disponivel })
+    .eq('id', ingredienteEmEdicaoId);
+
+  if (error) {
+    mostrarToast(error.code === '23505' ? 'Já existe um ingrediente com esse nome.' : 'Erro ao salvar.', 'erro');
+    return;
+  }
+
+  mostrarToast('Ingrediente atualizado!');
+  fecharModalIngrediente();
+  await carregarIngredientes();
+}
+
+async function excluirIngrediente() {
+  const confirmar = confirm('Excluir esse ingrediente de vez?');
+  if (!confirmar) return;
+
+  const { error } = await supabaseClient.from('ingredientes').delete().eq('id', ingredienteEmEdicaoId);
+
+  if (error) {
+    mostrarToast('Esse ingrediente já está sendo usado em algum item ou pedido — desative em vez de excluir.', 'erro');
+    return;
+  }
+
+  mostrarToast('Ingrediente excluído.');
+  fecharModalIngrediente();
   await carregarIngredientes();
 }
 
