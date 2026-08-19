@@ -434,16 +434,14 @@ function atualizarValorPagamento(index, valor) {
 
 function renderPagamentos() {
   const lista = document.getElementById('lista-pagamentos');
-  const { comanda } = estado.comandaEmFechamento;
-  const ehEntrega = comanda.tipo === 'entrega';
 
   if (estado.pagamentos.length === 0) {
     lista.innerHTML = '<div class="aviso-vazio-pequeno">Nenhuma forma de pagamento adicionada</div>';
   } else {
     lista.innerHTML = estado.pagamentos.map((p, i) => {
-      // Só mostra calculadora de troco pra pagamento em dinheiro, e só quando
-      // for entrega (é o cenário que realmente precisa avisar o motoboy)
-      const mostrarTroco = ehEntrega && p.forma === 'dinheiro';
+      // Calculadora de troco pra QUALQUER comanda (mesa, balcão, entrega) —
+      // sempre que a forma for dinheiro, ajuda a saber quanto devolver
+      const mostrarTroco = p.forma === 'dinheiro';
       const troco = mostrarTroco ? round2((p.valorRecebido || 0) - p.valor) : 0;
 
       return `
