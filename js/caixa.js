@@ -114,9 +114,9 @@ async function abrirFechamento(comandaId) {
   const { data: itens, error } = await supabaseClient
     .from('pedido_itens')
     .select(`
-      id, quantidade, observacao, preco_unitario_calculado,
+      id, item_cardapio_id, quantidade, observacao, preco_unitario_calculado, status,
       itens_cardapio ( nome ),
-      pedido_item_ingredientes ( ingredientes ( nome ) )
+      pedido_item_ingredientes ( ingrediente_id, foi_acrescimo, preco_acrescimo_aplicado, ingredientes ( nome ) )
     `)
     .eq('comanda_id', comandaId)
     .neq('status', 'cancelado');
@@ -249,6 +249,16 @@ function abrirTransferencia(itemId) {
   document.getElementById('transferencia-item-nome').textContent =
     `${item.quantidade}× ${item.itens_cardapio.nome}`;
 
+  // Se for só 1 unidade, nem mostra o seletor de quantidade (não tem o que escolher)
+  const seletorQtd = document.getElementById('transferencia-qtd-container');
+  if (item.quantidade > 1) {
+    seletorQtd.style.display = 'block';
+    document.getElementById('input-transferencia-qtd').max = item.quantidade;
+    document.getElementById('input-transferencia-qtd').value = item.quantidade;
+  } else {
+    seletorQtd.style.display = 'none';
+  }
+
   document.getElementById('lista-comandas-irmas').innerHTML = comandasIrmas.map(c => `
     <button class="btn-ghost btn-comanda-irma" onclick="confirmarTransferencia('${c.id}')">
       ${c.identificador_pessoa || ('Comanda #' + c.numero_sequencial)}
@@ -264,21 +274,76 @@ function fecharModalTransferencia() {
 }
 
 async function confirmarTransferencia(comandaDestinoId) {
-  const { error } = await supabaseClient
-    .from('pedido_itens')
-    .update({ comanda_id: comandaDestinoId })
-    .eq('id', itemParaTransferirId);
+  const item = estado.comandaEmFechamento.itens.find(i => i.id === itemParaTransferirId);
+  if (!item) return;
 
-  if (error) {
-    mostrarToast('Erro ao transferir item.', 'erro');
+  const inputQtd = document.getElementById('input-transferencia-qtd');
+  const qtdTransferir = item.quantidade > 1 ? (parseInt(inputQtd.value) || 1) : item.quantidade;
+
+  if (qtdTransferir < 1 || qtdTransferir > item.quantidade) {
+    mostrarToast('Quantidade inválida.', 'erro');
     return;
   }
 
-  // Remove da lista atual (o item agora pertence à outra comanda)
-  estado.comandaEmFechamento.itens = estado.comandaEmFechamento.itens.filter(i => i.id !== itemParaTransferirId);
-  renderFechamento();
-  fecharModalTransferencia();
-  mostrarToast('Item transferido!');
+  try {
+    if (qtdTransferir === item.quantidade) {
+      // Transfere a linha inteira — só muda de qual comanda ela pertence
+      const { error } = await supabaseClient
+        .from('pedido_itens')
+        .update({ comanda_id: comandaDestinoId })
+        .eq('id', item.id);
+      if (error) throw error;
+
+    } else {
+      // Transferência PARCIAL: diminui a quantidade na linha original
+      // e cria uma linha nova na comanda de destino com a quantidade transferida
+      const { error: erroReduzir } = await supabaseClient
+        .from('pedido_itens')
+        .update({ quantidade: item.quantidade - qtdTransferir })
+        .eq('id', item.id);
+      if (erroReduzir) throw erroReduzir;
+
+      const { data: novaLinha, error: erroNovaLinha } = await supabaseClient
+        .from('pedido_itens')
+        .insert({
+          comanda_id: comandaDestinoId,
+          item_cardapio_id: item.item_cardapio_id,
+          quantidade: qtdTransferir,
+          preco_unitario_calculado: item.preco_unitario_calculado,
+          observacao: item.observacao,
+          status: item.status,
+          criado_por: estado.perfil.id,
+        })
+        .select()
+        .single();
+      if (erroNovaLinha) throw erroNovaLinha;
+
+      // Copia os sabores/acréscimos da linha original pra linha nova
+      if (item.pedido_item_ingredientes.length > 0) {
+        const copiaSabores = item.pedido_item_ingredientes.map(s => ({
+          pedido_item_id: novaLinha.id,
+          ingrediente_id: s.ingrediente_id,
+          foi_acrescimo: s.foi_acrescimo,
+          preco_acrescimo_aplicado: s.preco_acrescimo_aplicado,
+        }));
+        await supabaseClient.from('pedido_item_ingredientes').insert(copiaSabores);
+      }
+    }
+
+    // Atualiza a tela: remove a linha (se foi tudo) ou ajusta a quantidade (se foi parcial)
+    if (qtdTransferir === item.quantidade) {
+      estado.comandaEmFechamento.itens = estado.comandaEmFechamento.itens.filter(i => i.id !== item.id);
+    } else {
+      item.quantidade -= qtdTransferir;
+    }
+    renderFechamento();
+    fecharModalTransferencia();
+    mostrarToast('Item transferido!');
+
+  } catch (erro) {
+    console.error(erro);
+    mostrarToast('Erro ao transferir item.', 'erro');
+  }
 }
 
 function atualizarTaxaServico(valor) {
