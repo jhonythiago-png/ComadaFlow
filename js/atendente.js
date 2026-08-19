@@ -12,6 +12,7 @@ const estado = {
   itemEmEdicao: null,          // item sendo montado no modal agora
   selecaoSabores: [],          // ordem de seleção de sabores no modal (pro cálculo de cota)
   ingredientesRemovidos: [],   // ids removidos de um item 'fixo' no modal
+  acrescimosSelecionados: [],  // ids de acréscimo pago escolhidos num item 'fixo'
   observacaoAtual: '',          // texto da observação do item sendo montado agora (reseta a cada item novo)
   ultimosPedidosEnviados: [],  // cache da última consulta de "pedidos enviados" (usado pelo botão cancelar)
 };
@@ -298,6 +299,7 @@ function abrirModalItem(itemId) {
   estado.itemEmEdicao = item;
   estado.selecaoSabores = [];
   estado.ingredientesRemovidos = [];
+  estado.acrescimosSelecionados = [];
   estado.observacaoAtual = '';
 
   document.getElementById('modal-item-nome').textContent = item.nome;
@@ -319,6 +321,7 @@ function renderCorpoModal() {
 
   if (item.tipo_montagem === 'fixo') {
     const padrao = item.item_ingredientes.filter(ii => ii.papel === 'padrao');
+    const acrescimos = item.item_ingredientes.filter(ii => ii.papel === 'opcao');
     htmlEspecifico = `
       <div class="modal-secao-label">Ingredientes (toque para remover)</div>
       <div class="ing-list">
@@ -329,6 +332,12 @@ function renderCorpoModal() {
           </button>
         `).join('')}
       </div>
+      ${acrescimos.length > 0 ? `
+        <div class="modal-secao-label">Acréscimos (opcional)</div>
+        <div class="ing-list">
+          ${acrescimos.map(ii => renderChipAcrescimo(ii)).join('')}
+        </div>
+      ` : ''}
     `;
   } else if (item.tipo_montagem === 'monte_sabores') {
     const opcoes = item.item_ingredientes.filter(ii => ii.papel === 'opcao');
@@ -387,6 +396,24 @@ function alternarRemocao(ingredienteId) {
   renderCorpoModal();
 }
 
+function renderChipAcrescimo(itemIngrediente) {
+  const id = itemIngrediente.ingredientes.id;
+  const marcado = estado.acrescimosSelecionados.includes(id);
+  const preco = itemIngrediente.preco_acrescimo.toFixed(2).replace('.', ',');
+  return `
+    <button class="chip ${marcado ? 'extra' : ''}" onclick="alternarAcrescimo('${id}')">
+      ${itemIngrediente.ingredientes.nome} +R$${preco}
+    </button>
+  `;
+}
+
+function alternarAcrescimo(ingredienteId) {
+  const idx = estado.acrescimosSelecionados.indexOf(ingredienteId);
+  if (idx >= 0) estado.acrescimosSelecionados.splice(idx, 1);
+  else estado.acrescimosSelecionados.push(ingredienteId);
+  renderCorpoModal();
+}
+
 function alternarSabor(ingredienteId, unico) {
   if (unico) {
     estado.selecaoSabores = [ingredienteId];
@@ -411,6 +438,13 @@ function atualizarTotalModal() {
     });
   }
 
+  if (item.tipo_montagem === 'fixo') {
+    estado.acrescimosSelecionados.forEach(id => {
+      const ii = item.item_ingredientes.find(x => x.ingredientes.id === id);
+      if (ii) total += ii.preco_acrescimo;
+    });
+  }
+
   document.getElementById('modal-total').textContent = `R$ ${total.toFixed(2).replace('.', ',')}`;
 }
 
@@ -430,6 +464,13 @@ function confirmarAdicaoAoCarrinho() {
     if (nomesRemovidos.length) partes.push('Sem ' + nomesRemovidos.join(', '));
     if (obsExtra) partes.push(obsExtra);
     observacao = partes.length ? partes.join(' — ') : null;
+
+    // Acréscimos pagos escolhidos (ex: bacon extra no Frango Especial)
+    sabores = estado.acrescimosSelecionados.map(id => {
+      const ii = item.item_ingredientes.find(x => x.ingredientes.id === id);
+      precoUnitario += ii.preco_acrescimo;
+      return { id, nome: `+ ${ii.ingredientes.nome}`, foiAcrescimo: true, precoAcrescimo: ii.preco_acrescimo };
+    });
 
   } else if (item.tipo_montagem === 'monte_sabores') {
     if (estado.selecaoSabores.length === 0) {

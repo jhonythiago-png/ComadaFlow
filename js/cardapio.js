@@ -333,7 +333,7 @@ async function carregarVinculosIngredientes(itemId) {
   if (!error) {
     estado.vinculosAtuais = {};
     for (const v of data || []) {
-      estado.vinculosAtuais[v.ingrediente_id] = { selecionado: true, precoAcrescimo: v.preco_acrescimo };
+      estado.vinculosAtuais[v.ingrediente_id] = { selecionado: true, papel: v.papel, precoAcrescimo: v.preco_acrescimo };
     }
   }
   atualizarVisibilidadeQtdSabores();
@@ -353,10 +353,14 @@ function atualizarVisibilidadeQtdSabores() {
 }
 
 /**
- * Mostra os ingredientes disponíveis pra vincular a esse item, mudando
- * o formato conforme o tipo: 'fixo' = só marcar quais compõem (sem preço),
- * 'monte_sabores' = marcar + preço de acréscimo, 'escolha_um' = só marcar,
- * 'venda_direta' = nem mostra a seção.
+ * Mostra os ingredientes disponíveis pra vincular a esse item.
+ * - 'fixo': DUAS listas — padrão (inclusos, removíveis sem custo) e
+ *   acréscimos (opcionais, com preço) — ex: Frango Especial pode ter
+ *   Bacon como padrão E ainda permitir "Catupiry extra" com custo.
+ * - 'monte_sabores': lista única de sabores disponíveis, cada um com
+ *   o preço cobrado SE for escolhido além da cota.
+ * - 'escolha_um': lista única, sem preço (só troca o sabor).
+ * - 'venda_direta': não mostra nada.
  */
 function renderSecaoIngredientesModal() {
   const tipo = document.getElementById('input-item-tipo').value;
@@ -368,22 +372,34 @@ function renderSecaoIngredientesModal() {
   }
   secao.style.display = 'block';
 
-  const rotulo = tipo === 'fixo'
-    ? 'Ingredientes que compõem esse item (desmarcado = não usa)'
-    : 'Sabores disponíveis pra escolher (marque todos que podem ser usados)';
-  document.getElementById('label-ingredientes-item').textContent = rotulo;
+  let html = '';
 
-  const mostrarPreco = tipo === 'monte_sabores';
+  if (tipo === 'fixo') {
+    html += `<div class="ingredientes-subsecao-label">Ingredientes padrão (inclusos — cliente pode pedir pra remover, sem custo)</div>`;
+    html += renderChecklistIngredientes('padrao', false);
+    html += `<div class="ingredientes-subsecao-label" style="margin-top:16px;">Acréscimos disponíveis (opcional, com custo extra)</div>`;
+    html += renderChecklistIngredientes('opcao', true);
+  } else if (tipo === 'monte_sabores') {
+    html += `<div class="ingredientes-subsecao-label">Sabores disponíveis (cota inclusa já foi definida acima; o que passar da cota cobra o preço aqui)</div>`;
+    html += renderChecklistIngredientes('opcao', true);
+  } else if (tipo === 'escolha_um') {
+    html += `<div class="ingredientes-subsecao-label">Sabores disponíveis pra escolher (sem custo extra)</div>`;
+    html += renderChecklistIngredientes('opcao', false);
+  }
 
-  document.getElementById('lista-ingredientes-modal').innerHTML = estado.ingredientes.map(ing => {
-    const vinculo = estado.vinculosAtuais[ing.id];
-    const marcado = vinculo?.selecionado || false;
-    const preco = vinculo?.precoAcrescimo ?? 0;
+  document.getElementById('lista-ingredientes-modal').innerHTML = html;
+}
+
+function renderChecklistIngredientes(papelAlvo, mostrarPreco) {
+  return `<div class="lista-ingredientes-modal-interna">` + estado.ingredientes.map(ing => {
+    const v = estado.vinculosAtuais[ing.id];
+    const marcado = v?.selecionado && v.papel === papelAlvo;
+    const preco = marcado ? v.precoAcrescimo : 0;
     return `
       <div class="ingrediente-modal-linha">
         <label class="ingrediente-modal-check">
-          <input type="checkbox" data-ingrediente-id="${ing.id}" ${marcado ? 'checked' : ''}
-                 onchange="alternarIngredienteModal('${ing.id}', this.checked)">
+          <input type="checkbox" ${marcado ? 'checked' : ''}
+                 onchange="alternarIngredienteModal('${ing.id}', this.checked, '${papelAlvo}')">
           <span>${ing.nome}</span>
         </label>
         ${mostrarPreco ? `
@@ -394,23 +410,27 @@ function renderSecaoIngredientesModal() {
         ` : ''}
       </div>
     `;
-  }).join('');
+  }).join('') + `</div>`;
 }
 
-function alternarIngredienteModal(ingredienteId, marcado) {
-  if (!estado.vinculosAtuais[ingredienteId]) {
-    estado.vinculosAtuais[ingredienteId] = { selecionado: marcado, precoAcrescimo: 0 };
-  } else {
-    estado.vinculosAtuais[ingredienteId].selecionado = marcado;
+function alternarIngredienteModal(ingredienteId, marcado, papelAlvo) {
+  if (marcado) {
+    estado.vinculosAtuais[ingredienteId] = {
+      selecionado: true,
+      papel: papelAlvo,
+      precoAcrescimo: estado.vinculosAtuais[ingredienteId]?.precoAcrescimo || 0,
+    };
+  } else if (estado.vinculosAtuais[ingredienteId]?.papel === papelAlvo) {
+    // só desmarca se o clique foi na mesma lista onde ele estava marcado
+    // (evita que marcar numa lista desmarque por engano na outra)
+    delete estado.vinculosAtuais[ingredienteId];
   }
   renderSecaoIngredientesModal();
 }
 
 function atualizarPrecoIngredienteModal(ingredienteId, valor) {
   const preco = parseFloat(valor.replace(',', '.')) || 0;
-  if (!estado.vinculosAtuais[ingredienteId]) {
-    estado.vinculosAtuais[ingredienteId] = { selecionado: true, precoAcrescimo: preco };
-  } else {
+  if (estado.vinculosAtuais[ingredienteId]) {
     estado.vinculosAtuais[ingredienteId].precoAcrescimo = preco;
   }
 }
@@ -470,7 +490,7 @@ async function salvarItem() {
 
   // Grava os vínculos de ingredientes (só se o tipo usa ingredientes)
   if (tipoMontagem !== 'venda_direta' && itemIdSalvo) {
-    await salvarVinculosIngredientes(itemIdSalvo, tipoMontagem);
+    await salvarVinculosIngredientes(itemIdSalvo);
   }
 
   mostrarToast('Item salvo!');
@@ -478,20 +498,18 @@ async function salvarItem() {
   await carregarItens();
 }
 
-async function salvarVinculosIngredientes(itemId, tipoMontagem) {
+async function salvarVinculosIngredientes(itemId) {
   // Estratégia simples: apaga tudo e recria — evita ter que "diferenciar"
   // o que mudou, e a tabela item_ingredientes é pequena por item
   await supabaseClient.from('item_ingredientes').delete().eq('item_id', itemId);
-
-  const papel = tipoMontagem === 'fixo' ? 'padrao' : 'opcao';
 
   const linhas = Object.entries(estado.vinculosAtuais)
     .filter(([, v]) => v.selecionado)
     .map(([ingredienteId, v]) => ({
       item_id: itemId,
       ingrediente_id: ingredienteId,
-      papel,
-      preco_acrescimo: tipoMontagem === 'monte_sabores' ? (v.precoAcrescimo || 0) : 0,
+      papel: v.papel,
+      preco_acrescimo: v.papel === 'opcao' ? (v.precoAcrescimo || 0) : 0,
     }));
 
   if (linhas.length > 0) {
