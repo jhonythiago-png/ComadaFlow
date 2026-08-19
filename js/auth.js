@@ -10,13 +10,14 @@ const CHAVE_PERFIL = 'comandaflow_perfil';
  * esteja disponível em sessionStorage.
  * Se não houver sessão, redireciona pro login.
  */
+/**
+ * Confere se existe uma sessão válida do Supabase e se o perfil ainda
+ * está ATIVO (sempre confere de novo no banco, nunca confia só no cache —
+ * assim, se o Master desativar alguém, o acesso é cortado na hora).
+ */
 async function verificarAutenticacao() {
-  const perfilSalvo = sessionStorage.getItem(CHAVE_PERFIL);
-  if (perfilSalvo) return JSON.parse(perfilSalvo);
-
   const { data: sessao } = await supabaseClient.auth.getSession();
   if (!sessao?.session) {
-    // Lembra a página que a pessoa tentou acessar, pra voltar pra ela depois do login
     const paginaAtual = window.location.pathname.split('/').pop();
     window.location.href = `index.html?redirect=${encodeURIComponent(paginaAtual)}`;
     return null;
@@ -24,12 +25,19 @@ async function verificarAutenticacao() {
 
   const { data: perfil, error } = await supabaseClient
     .from('perfis')
-    .select('id, nome, username, nivel_acesso, estabelecimento_id')
+    .select('id, nome, username, nivel_acesso, estabelecimento_id, ativo')
     .eq('auth_user_id', sessao.session.user.id)
     .single();
 
   if (error || !perfil) {
     window.location.href = 'index.html';
+    return null;
+  }
+
+  if (!perfil.ativo) {
+    await supabaseClient.auth.signOut();
+    sessionStorage.removeItem(CHAVE_PERFIL);
+    window.location.href = 'index.html?motivo=desativado';
     return null;
   }
 
@@ -58,4 +66,36 @@ function mostrarToast(mensagem, tipo = 'ok') {
   document.body.appendChild(toast);
 
   setTimeout(() => toast.remove(), 3000);
+}
+
+/**
+ * Monta o menu do sistema (logo + navegação + usuário/sair) — aparece
+ * em toda tela, mostrando só o que aquele nível de acesso pode ver.
+ * No notebook fica como sidebar fixa lateral; no celular vira barra no topo.
+ */
+function injetarNavegacao(perfil, paginaAtual) {
+  const container = document.getElementById('sidebar');
+  if (!container || !perfil) return;
+
+  const paginas = [
+    { id: 'atendente', label: 'Atendente', href: 'atendente.html', masterOnly: false },
+    { id: 'caixa', label: 'Caixa', href: 'caixa.html', masterOnly: false },
+    { id: 'financeiro', label: 'Financeiro', href: 'financeiro.html', masterOnly: true },
+    { id: 'master', label: 'Config', href: 'master.html', masterOnly: true },
+  ];
+
+  const visiveis = paginas.filter(p => !p.masterOnly || perfil.nivel_acesso === 'master');
+
+  const linksHtml = visiveis.map(p => `
+    <a href="${p.href}" class="sidebar-nav-link ${p.id === paginaAtual ? 'on' : ''}">${p.label}</a>
+  `).join('');
+
+  container.innerHTML = `
+    <span class="sidebar-logo">ComandaFlow</span>
+    <nav class="sidebar-nav">${linksHtml}</nav>
+    <div class="sidebar-footer">
+      <span>${perfil.nome}</span>
+      <button onclick="fazerLogout()">saír</button>
+    </div>
+  `;
 }

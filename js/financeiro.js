@@ -25,6 +25,7 @@ async function iniciar() {
   if (!estado.perfil) return;
 
   if (estado.perfil.nivel_acesso !== 'master') {
+    document.body.className = ''; // remove o layout de sidebar, senão a mensagem fica espremida
     document.body.innerHTML = `
       <div style="display:flex; align-items:center; justify-content:center; height:100vh; text-align:center; padding:24px;">
         <div>
@@ -38,6 +39,7 @@ async function iniciar() {
   }
 
   document.getElementById('nome-usuario').textContent = estado.perfil.nome;
+  injetarNavegacao(estado.perfil, 'financeiro');
   selecionarPeriodo('hoje');
   await carregarDespesas();
 }
