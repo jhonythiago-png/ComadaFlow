@@ -123,7 +123,22 @@ async function abrirFechamento(comandaId) {
 
   if (error) { mostrarToast('Erro ao carregar itens.', 'erro'); return; }
 
-  estado.comandaEmFechamento = { comanda, itens: itens || [] };
+  // Busca outras comandas abertas na MESMA mesa (outras pessoas na mesa 04, por ex.)
+  // — usado pra permitir "transferir item" quando o atendente anotou na pessoa errada
+  let comandasIrmas = [];
+  if (comanda.tipo === 'mesa' && comanda.numero_mesa) {
+    const { data: irmas } = await supabaseClient
+      .from('comandas')
+      .select('id, numero_sequencial, identificador_pessoa')
+      .eq('estabelecimento_id', estado.perfil.estabelecimento_id)
+      .eq('tipo', 'mesa')
+      .eq('numero_mesa', comanda.numero_mesa)
+      .eq('status', 'aberta')
+      .neq('id', comandaId);
+    comandasIrmas = irmas || [];
+  }
+
+  estado.comandaEmFechamento = { comanda, itens: itens || [], comandasIrmas };
   estado.taxaServicoPercentual = Number(estado.estabelecimento?.taxa_servico_padrao || 0);
   estado.taxaEntregaValor = Number(comanda.taxa_entrega || 0);
   estado.pagamentos = [];
@@ -151,11 +166,13 @@ function calcularValores() {
 function round2(n) { return Math.round(n * 100) / 100; }
 
 function renderFechamento() {
-  const { comanda, itens } = estado.comandaEmFechamento;
+  const { comanda, itens, comandasIrmas } = estado.comandaEmFechamento;
   const { subtotal, taxaValor, total } = calcularValores();
 
   document.getElementById('fechamento-titulo').textContent = rotuloComanda(comanda);
   document.getElementById('fechamento-codigo').textContent = `COMANDA #${comanda.numero_sequencial}`;
+
+  const temIrmas = comandasIrmas && comandasIrmas.length > 0;
 
   document.getElementById('fechamento-itens').innerHTML = itens.map(item => {
     const sabores = item.pedido_item_ingredientes.map(s => s.ingredientes.nome).join(', ');
@@ -168,6 +185,7 @@ function renderFechamento() {
         </div>
         <div style="display:flex; align-items:center; gap:10px;">
           <span class="item-valor">R$ ${(item.preco_unitario_calculado * item.quantidade).toFixed(2).replace('.', ',')}</span>
+          ${temIrmas ? `<button class="btn-transferir" onclick="abrirTransferencia('${item.id}')" title="Transferir pra outra pessoa da mesa">⇄</button>` : ''}
           <button class="btn-remover" onclick="removerItemFechamento('${item.id}')" title="Remover item (não cobrar)">✕</button>
         </div>
       </div>
@@ -215,6 +233,52 @@ async function removerItemFechamento(itemId) {
   estado.comandaEmFechamento.itens = estado.comandaEmFechamento.itens.filter(i => i.id !== itemId);
   renderFechamento();
   mostrarToast('Item removido da conta.');
+}
+
+// ------------------------------------------------------------
+// Transferir item pra outra pessoa da MESMA mesa
+// (corrige quando o atendente anotou na comanda errada)
+// ------------------------------------------------------------
+let itemParaTransferirId = null;
+
+function abrirTransferencia(itemId) {
+  itemParaTransferirId = itemId;
+  const item = estado.comandaEmFechamento.itens.find(i => i.id === itemId);
+  const { comandasIrmas } = estado.comandaEmFechamento;
+
+  document.getElementById('transferencia-item-nome').textContent =
+    `${item.quantidade}× ${item.itens_cardapio.nome}`;
+
+  document.getElementById('lista-comandas-irmas').innerHTML = comandasIrmas.map(c => `
+    <button class="btn-ghost btn-comanda-irma" onclick="confirmarTransferencia('${c.id}')">
+      ${c.identificador_pessoa || ('Comanda #' + c.numero_sequencial)}
+    </button>
+  `).join('');
+
+  document.getElementById('modal-transferencia-overlay').style.display = 'flex';
+}
+
+function fecharModalTransferencia() {
+  document.getElementById('modal-transferencia-overlay').style.display = 'none';
+  itemParaTransferirId = null;
+}
+
+async function confirmarTransferencia(comandaDestinoId) {
+  const { error } = await supabaseClient
+    .from('pedido_itens')
+    .update({ comanda_id: comandaDestinoId })
+    .eq('id', itemParaTransferirId);
+
+  if (error) {
+    mostrarToast('Erro ao transferir item.', 'erro');
+    return;
+  }
+
+  // Remove da lista atual (o item agora pertence à outra comanda)
+  estado.comandaEmFechamento.itens = estado.comandaEmFechamento.itens.filter(i => i.id !== itemParaTransferirId);
+  renderFechamento();
+  fecharModalTransferencia();
+  mostrarToast('Item transferido!');
 }
 
 function atualizarTaxaServico(valor) {
