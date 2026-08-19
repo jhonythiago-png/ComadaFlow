@@ -57,6 +57,8 @@
   .funcionario-status.ativo { background: rgba(92,122,82,.18); color: #9CBF8F; }
   .funcionario-status.inativo { background: rgba(214,67,42,.14); color: #F0A08D; }
   .btn-toggle-status { font-size: 11px; color: var(--crust); text-decoration: underline; white-space: nowrap; }
+  .btn-editar-func { font-size: 11px; color: var(--text-muted); text-decoration: underline; white-space: nowrap; }
+  .btn-excluir-func { font-size: 11px; color: var(--paprika); text-decoration: underline; white-space: nowrap; }
 
   .btn-novo-func { padding: 9px 18px; width: auto; }
 
@@ -77,6 +79,19 @@
     width: 100%; max-width: 400px;
   }
   #modal-funcionario-conteudo h3 { font-family: var(--font-display); margin-bottom: 16px; }
+
+  #modal-editar-funcionario-overlay, #modal-confirmacao-generica-overlay {
+    display: none; position: fixed; inset: 0; background: rgba(0,0,0,.6);
+    align-items: center; justify-content: center; z-index: 100; padding: 20px;
+  }
+  #modal-editar-funcionario-conteudo, #modal-confirmacao-generica-conteudo {
+    background: var(--ink); border-radius: var(--radius-lg); padding: 22px;
+    width: 100%; max-width: 400px; max-height: 85vh; overflow-y: auto;
+  }
+  #modal-editar-funcionario-conteudo h3, #modal-confirmacao-generica-conteudo h3 {
+    font-family: var(--font-display); margin-bottom: 16px;
+  }
+  #confirmacao-generica-texto { font-size: 13px; color: var(--text-muted); margin-bottom: 16px; }
   .modal-botoes { display: flex; gap: 10px; margin-top: 8px; }
   .modal-botoes button { flex: 1; }
 </style>
@@ -199,6 +214,54 @@
     <div class="modal-botoes">
       <button class="btn-ghost" onclick="fecharModalFuncionario()">Cancelar</button>
       <button class="btn-primary" id="btn-salvar-funcionario" onclick="salvarNovoFuncionario()">Criar funcionário</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: editar funcionário -->
+<div id="modal-editar-funcionario-overlay">
+  <div id="modal-editar-funcionario-conteudo">
+    <h3>Editar funcionário</h3>
+    <input type="hidden" id="input-editar-func-id">
+
+    <div class="campo">
+      <label>Nome</label>
+      <input type="text" id="input-editar-func-nome">
+    </div>
+    <div class="campo">
+      <label>Usuário (pra login)</label>
+      <input type="text" id="input-editar-func-username" autocapitalize="none">
+    </div>
+    <div class="campo">
+      <label>Nova senha (deixe em branco pra não mudar)</label>
+      <div style="display:flex; gap:8px;">
+        <input type="password" id="input-editar-func-senha" style="flex:1;">
+        <button type="button" class="btn-ghost" style="flex-shrink:0; padding:0 14px;" onclick="alternarMostrarSenha('input-editar-func-senha', this)">👁</button>
+      </div>
+    </div>
+    <div class="campo">
+      <label>Confirmar nova senha</label>
+      <div style="display:flex; gap:8px;">
+        <input type="password" id="input-editar-func-senha-confirmar" style="flex:1;">
+        <button type="button" class="btn-ghost" style="flex-shrink:0; padding:0 14px;" onclick="alternarMostrarSenha('input-editar-func-senha-confirmar', this)">👁</button>
+      </div>
+    </div>
+
+    <div class="modal-botoes">
+      <button class="btn-ghost" onclick="fecharModalEditarFuncionario()">Cancelar</button>
+      <button class="btn-primary" onclick="salvarEdicaoFuncionario()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: confirmação genérica -->
+<div id="modal-confirmacao-generica-overlay">
+  <div id="modal-confirmacao-generica-conteudo">
+    <h3>Confirmar</h3>
+    <p id="confirmacao-generica-texto"></p>
+    <div class="modal-botoes">
+      <button class="btn-ghost" onclick="fecharModalConfirmacaoGenerica()">Cancelar</button>
+      <button class="btn-danger" onclick="executarConfirmacaoGenerica()">Confirmar</button>
     </div>
   </div>
 </div>
