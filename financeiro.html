@@ -133,6 +133,25 @@
   .campo-checkbox input { width: auto; }
   .modal-botoes { display: flex; gap: 10px; margin-top: 8px; }
   .modal-botoes button { flex: 1; }
+
+  .modal-item-overlay-clone {
+    display: none; position: fixed; inset: 0; background: rgba(0,0,0,.6);
+    align-items: center; justify-content: center; z-index: 100; padding: 20px;
+  }
+  .modal-item-conteudo-clone {
+    background: var(--ink); border-radius: var(--radius-lg); padding: 22px;
+    width: 100%; max-width: 380px;
+  }
+  .modal-item-conteudo-clone h3 { font-family: var(--font-display); margin-bottom: 16px; }
+
+  .sangria-linha {
+    display: flex; justify-content: space-between; align-items: center;
+    background: var(--ink); border: 1px solid var(--ink-line); border-radius: var(--radius-sm);
+    padding: 12px 14px; margin-bottom: 8px;
+  }
+  .sangria-descricao { font-size: 13px; font-weight: 600; }
+  .sangria-detalhe { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+  .sangria-valor { font-family: var(--font-mono); font-size: 13.5px; color: var(--paprika); }
 </style>
 </head>
 <body class="app-shell">
@@ -198,6 +217,17 @@
     <div id="lista-despesas"></div>
   </div>
 
+  <div class="painel">
+    <div class="despesas-header">
+      <div class="secao-titulo"><span class="tag">06</span> Sangria de caixa</div>
+      <button class="btn-primary btn-nova-despesa" onclick="abrirModalSangria()">+ Registrar sangria</button>
+    </div>
+    <p style="font-size:12px; color:var(--text-muted); margin-bottom:14px;">
+      Sangria é a retirada de dinheiro do caixa durante o dia. Não é uma despesa — só ajuda a bater o caixa no fim do dia.
+    </p>
+    <div id="lista-sangrias"></div>
+  </div>
+
 </div>
 
 <!-- MODAL: nova despesa -->
@@ -239,6 +269,27 @@
     <div class="modal-botoes">
       <button class="btn-ghost" onclick="fecharModalDespesa()">Cancelar</button>
       <button class="btn-primary" onclick="salvarDespesa()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: nova sangria -->
+<div id="modal-sangria-overlay" class="modal-item-overlay-clone">
+  <div class="modal-item-conteudo-clone">
+    <h3>Registrar sangria</h3>
+
+    <div class="campo">
+      <label>Valor retirado (R$)</label>
+      <input type="text" inputmode="decimal" id="input-sangria-valor" placeholder="0,00">
+    </div>
+    <div class="campo">
+      <label>Motivo (opcional)</label>
+      <input type="text" id="input-sangria-motivo" placeholder="Ex: guardar no cofre">
+    </div>
+
+    <div class="modal-botoes">
+      <button class="btn-ghost" onclick="fecharModalSangria()">Cancelar</button>
+      <button class="btn-primary" onclick="salvarSangria()">Registrar</button>
     </div>
   </div>
 </div>

@@ -164,6 +164,24 @@
     display: block; margin-top: 6px; font-size: 11px; color: var(--paprika);
     text-decoration: underline; font-family: var(--font-body);
   }
+  .btn-cancelar-comanda {
+    width: 100%; margin-top: 18px; padding: 12px; background: rgba(214,67,42,.14);
+    color: var(--paprika); border: 1px solid rgba(214,67,42,.4); border-radius: var(--radius-md);
+    font-weight: 700; font-size: 13px;
+  }
+
+  #modal-confirmacao-generica-overlay {
+    display: none; position: fixed; inset: 0; background: rgba(0,0,0,.6);
+    align-items: center; justify-content: center; z-index: 200; padding: 20px;
+  }
+  #modal-confirmacao-generica-conteudo {
+    background: var(--ink); border-radius: var(--radius-lg); padding: 22px;
+    width: 100%; max-width: 380px;
+  }
+  #modal-confirmacao-generica-conteudo h3 { font-family: var(--font-display); margin-bottom: 10px; }
+  #confirmacao-generica-texto { font-size: 13px; color: var(--text-muted); margin-bottom: 16px; }
+  .modal-botoes { display: flex; gap: 10px; }
+  .modal-botoes button { flex: 1; }
 
   /* Reforço final: garante que os dois modais fiquem centralizados em telas
      maiores, independente da ordem de outras regras acima (essa é sempre a última) */
@@ -277,6 +295,19 @@
     <button class="modal-fechar" onclick="fecharPedidosEnviados()">✕</button>
     <div class="modal-secao-label" style="margin-top:0;">Pedidos enviados pra cozinha</div>
     <div id="lista-pedidos-enviados"><div class="aviso-vazio">Carregando...</div></div>
+    <button class="btn-cancelar-comanda" onclick="abrirConfirmacaoCancelarComanda()">Cancelar comanda inteira</button>
+  </div>
+</div>
+
+<!-- MODAL: confirmação genérica (substitui confirm() nativo, que falha em PWA) -->
+<div id="modal-confirmacao-generica-overlay">
+  <div id="modal-confirmacao-generica-conteudo">
+    <h3>Confirmar</h3>
+    <p id="confirmacao-generica-texto"></p>
+    <div class="modal-botoes">
+      <button class="btn-ghost" onclick="fecharModalConfirmacaoGenerica()">Cancelar</button>
+      <button class="btn-danger" onclick="executarConfirmacaoGenerica()">Confirmar</button>
+    </div>
   </div>
 </div>
 
