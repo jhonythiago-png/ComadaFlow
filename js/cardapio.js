@@ -6,7 +6,9 @@ const estado = {
   perfil: null,
   categorias: [],
   itens: [],
+  ingredientes: [],
   itemEmEdicaoId: null, // null = criando novo
+  vinculosAtuais: {},    // { ingrediente_id: { selecionado, precoAcrescimo } } — só enquanto o modal do item está aberto
 };
 
 const NOMES_TIPO = {
@@ -36,6 +38,7 @@ async function iniciar() {
 
   injetarNavegacao(estado.perfil, 'cardapio');
   await carregarCategorias();
+  await carregarIngredientes();
   await carregarItens();
 }
 
@@ -113,6 +116,66 @@ async function criarNovaCategoria() {
   document.getElementById('input-nova-categoria').value = '';
   mostrarToast('Categoria criada!');
   await carregarCategorias();
+}
+
+// ------------------------------------------------------------
+// Ingredientes / sabores
+// ------------------------------------------------------------
+async function carregarIngredientes() {
+  const { data, error } = await supabaseClient
+    .from('ingredientes')
+    .select('id, nome, disponivel')
+    .eq('estabelecimento_id', estado.perfil.estabelecimento_id)
+    .order('nome');
+
+  if (error) { console.error(error); return; }
+
+  estado.ingredientes = data || [];
+  renderIngredientes();
+}
+
+function renderIngredientes() {
+  const container = document.getElementById('lista-ingredientes');
+
+  if (estado.ingredientes.length === 0) {
+    container.innerHTML = '<div class="aviso-vazio-pequeno">Nenhum ingrediente cadastrado ainda.</div>';
+    return;
+  }
+
+  container.innerHTML = estado.ingredientes.map(ing => `
+    <div class="ingrediente-chip ${!ing.disponivel ? 'indisponivel' : ''}">
+      <span>${ing.nome}</span>
+      <label class="switch-disponivel switch-mini" title="Disponível">
+        <input type="checkbox" ${ing.disponivel ? 'checked' : ''} onchange="alternarDisponibilidadeIngrediente('${ing.id}', this.checked)">
+        <span class="switch-slider"></span>
+      </label>
+    </div>
+  `).join('');
+}
+
+async function alternarDisponibilidadeIngrediente(id, novoValor) {
+  const { error } = await supabaseClient.from('ingredientes').update({ disponivel: novoValor }).eq('id', id);
+  if (error) { mostrarToast('Erro ao atualizar ingrediente.', 'erro'); return; }
+  await carregarIngredientes();
+}
+
+async function criarNovoIngrediente() {
+  const nome = document.getElementById('input-novo-ingrediente').value.trim();
+  if (!nome) { mostrarToast('Digite o nome do ingrediente.', 'erro'); return; }
+
+  const { error } = await supabaseClient.from('ingredientes').insert({
+    estabelecimento_id: estado.perfil.estabelecimento_id,
+    nome,
+  });
+
+  if (error) {
+    mostrarToast(error.code === '23505' ? 'Esse ingrediente já existe.' : 'Erro ao criar ingrediente.', 'erro');
+    return;
+  }
+
+  document.getElementById('input-novo-ingrediente').value = '';
+  mostrarToast('Ingrediente criado!');
+  await carregarIngredientes();
 }
 
 // ------------------------------------------------------------
@@ -196,9 +259,30 @@ function abrirModalItem(itemId) {
   document.getElementById('input-item-destaque').checked = item?.destaque || false;
   document.getElementById('input-item-disponivel').checked = item ? item.disponivel : true;
 
-  atualizarVisibilidadeQtdSabores();
+  estado.vinculosAtuais = {};
   document.getElementById('btn-excluir-item').style.display = item ? 'block' : 'none';
   document.getElementById('modal-item-overlay').style.display = 'flex';
+
+  if (item) {
+    carregarVinculosIngredientes(itemId);
+  } else {
+    atualizarVisibilidadeQtdSabores();
+  }
+}
+
+async function carregarVinculosIngredientes(itemId) {
+  const { data, error } = await supabaseClient
+    .from('item_ingredientes')
+    .select('ingrediente_id, papel, preco_acrescimo')
+    .eq('item_id', itemId);
+
+  if (!error) {
+    estado.vinculosAtuais = {};
+    for (const v of data || []) {
+      estado.vinculosAtuais[v.ingrediente_id] = { selecionado: true, precoAcrescimo: v.preco_acrescimo };
+    }
+  }
+  atualizarVisibilidadeQtdSabores();
 }
 
 function fecharModalItem() {
@@ -210,6 +294,71 @@ function atualizarVisibilidadeQtdSabores() {
   const precisa = tipo === 'monte_sabores' || tipo === 'escolha_um';
   document.getElementById('campo-qtd-sabores').style.display = precisa ? 'block' : 'none';
   if (tipo === 'escolha_um') document.getElementById('input-item-qtd-sabores').value = 1;
+
+  renderSecaoIngredientesModal();
+}
+
+/**
+ * Mostra os ingredientes disponíveis pra vincular a esse item, mudando
+ * o formato conforme o tipo: 'fixo' = só marcar quais compõem (sem preço),
+ * 'monte_sabores' = marcar + preço de acréscimo, 'escolha_um' = só marcar,
+ * 'venda_direta' = nem mostra a seção.
+ */
+function renderSecaoIngredientesModal() {
+  const tipo = document.getElementById('input-item-tipo').value;
+  const secao = document.getElementById('secao-ingredientes-item');
+
+  if (tipo === 'venda_direta') {
+    secao.style.display = 'none';
+    return;
+  }
+  secao.style.display = 'block';
+
+  const rotulo = tipo === 'fixo'
+    ? 'Ingredientes que compõem esse item (desmarcado = não usa)'
+    : 'Sabores disponíveis pra escolher (marque todos que podem ser usados)';
+  document.getElementById('label-ingredientes-item').textContent = rotulo;
+
+  const mostrarPreco = tipo === 'monte_sabores';
+
+  document.getElementById('lista-ingredientes-modal').innerHTML = estado.ingredientes.map(ing => {
+    const vinculo = estado.vinculosAtuais[ing.id];
+    const marcado = vinculo?.selecionado || false;
+    const preco = vinculo?.precoAcrescimo ?? 0;
+    return `
+      <div class="ingrediente-modal-linha">
+        <label class="ingrediente-modal-check">
+          <input type="checkbox" data-ingrediente-id="${ing.id}" ${marcado ? 'checked' : ''}
+                 onchange="alternarIngredienteModal('${ing.id}', this.checked)">
+          <span>${ing.nome}</span>
+        </label>
+        ${mostrarPreco ? `
+          <input type="text" inputmode="decimal" class="ingrediente-modal-preco"
+                 placeholder="0,00" value="${marcado ? String(preco).replace('.', ',') : ''}"
+                 ${marcado ? '' : 'disabled'}
+                 onchange="atualizarPrecoIngredienteModal('${ing.id}', this.value)">
+        ` : ''}
+      </div>
+    `;
+  }).join('');
+}
+
+function alternarIngredienteModal(ingredienteId, marcado) {
+  if (!estado.vinculosAtuais[ingredienteId]) {
+    estado.vinculosAtuais[ingredienteId] = { selecionado: marcado, precoAcrescimo: 0 };
+  } else {
+    estado.vinculosAtuais[ingredienteId].selecionado = marcado;
+  }
+  renderSecaoIngredientesModal();
+}
+
+function atualizarPrecoIngredienteModal(ingredienteId, valor) {
+  const preco = parseFloat(valor.replace(',', '.')) || 0;
+  if (!estado.vinculosAtuais[ingredienteId]) {
+    estado.vinculosAtuais[ingredienteId] = { selecionado: true, precoAcrescimo: preco };
+  } else {
+    estado.vinculosAtuais[ingredienteId].precoAcrescimo = preco;
+  }
 }
 
 async function salvarItem() {
@@ -244,12 +393,19 @@ async function salvarItem() {
     disponivel,
   };
 
-  let erro;
+  let erro, itemIdSalvo;
   if (estado.itemEmEdicaoId) {
-    ({ error: erro } = await supabaseClient.from('itens_cardapio').update(dadosItem).eq('id', estado.itemEmEdicaoId));
+    itemIdSalvo = estado.itemEmEdicaoId;
+    ({ error: erro } = await supabaseClient.from('itens_cardapio').update(dadosItem).eq('id', itemIdSalvo));
   } else {
     const proximaOrdem = estado.itens.filter(i => i.categoria_id === categoriaId).length + 1;
-    ({ error: erro } = await supabaseClient.from('itens_cardapio').insert({ ...dadosItem, ordem_exibicao: proximaOrdem }));
+    const { data, error: erroInsert } = await supabaseClient
+      .from('itens_cardapio')
+      .insert({ ...dadosItem, ordem_exibicao: proximaOrdem })
+      .select()
+      .single();
+    erro = erroInsert;
+    itemIdSalvo = data?.id;
   }
 
   if (erro) {
@@ -258,9 +414,36 @@ async function salvarItem() {
     return;
   }
 
+  // Grava os vínculos de ingredientes (só se o tipo usa ingredientes)
+  if (tipoMontagem !== 'venda_direta' && itemIdSalvo) {
+    await salvarVinculosIngredientes(itemIdSalvo, tipoMontagem);
+  }
+
   mostrarToast('Item salvo!');
   fecharModalItem();
   await carregarItens();
+}
+
+async function salvarVinculosIngredientes(itemId, tipoMontagem) {
+  // Estratégia simples: apaga tudo e recria — evita ter que "diferenciar"
+  // o que mudou, e a tabela item_ingredientes é pequena por item
+  await supabaseClient.from('item_ingredientes').delete().eq('item_id', itemId);
+
+  const papel = tipoMontagem === 'fixo' ? 'padrao' : 'opcao';
+
+  const linhas = Object.entries(estado.vinculosAtuais)
+    .filter(([, v]) => v.selecionado)
+    .map(([ingredienteId, v]) => ({
+      item_id: itemId,
+      ingrediente_id: ingredienteId,
+      papel,
+      preco_acrescimo: tipoMontagem === 'monte_sabores' ? (v.precoAcrescimo || 0) : 0,
+    }));
+
+  if (linhas.length > 0) {
+    const { error } = await supabaseClient.from('item_ingredientes').insert(linhas);
+    if (error) console.error('Erro ao salvar vínculos de ingredientes:', error);
+  }
 }
 
 async function excluirItem() {
