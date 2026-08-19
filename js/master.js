@@ -103,7 +103,7 @@ function fecharModalFuncionario() {
 }
 
 async function salvarNovoFuncionario() {
-  const nome = document.getElementById('input-func-nome').value.trim();
+  const nome = formatarTitulo(document.getElementById('input-func-nome').value.trim());
   const username = document.getElementById('input-func-username').value.trim().toLowerCase();
   const senha = document.getElementById('input-func-senha').value;
 

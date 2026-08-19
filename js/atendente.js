@@ -246,20 +246,20 @@ async function selecionarComanda(comandaId) {
 
 async function abrirNovaComandaMesa() {
   const numeroMesa = document.getElementById('input-numero-mesa').value.trim();
-  const pessoa = document.getElementById('input-pessoa-mesa').value.trim();
+  const pessoa = formatarTitulo(document.getElementById('input-pessoa-mesa').value.trim());
   if (!numeroMesa) { mostrarToast('Digite o número da mesa.', 'erro'); return; }
   await criarComanda({ tipo: 'mesa', numero_mesa: numeroMesa, identificador_pessoa: pessoa || null });
 }
 
 async function abrirNovaComandaAvulsa() {
-  const nomeCliente = document.getElementById('input-nome-cliente').value.trim();
+  const nomeCliente = formatarTitulo(document.getElementById('input-nome-cliente').value.trim());
   await criarComanda({ tipo: 'avulsa', nome_cliente: nomeCliente || null });
 }
 
 async function abrirNovaComandaEntrega() {
-  const nomeCliente = document.getElementById('input-entrega-nome-cliente').value.trim();
+  const nomeCliente = formatarTitulo(document.getElementById('input-entrega-nome-cliente').value.trim());
   const telefone = document.getElementById('input-entrega-telefone').value.trim();
-  const endereco = document.getElementById('input-entrega-endereco').value.trim();
+  const endereco = formatarTitulo(document.getElementById('input-entrega-endereco').value.trim());
   const taxaTexto = document.getElementById('input-entrega-taxa').value;
 
   if (!nomeCliente) { mostrarToast('Digite o nome do cliente.', 'erro'); return; }

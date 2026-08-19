@@ -69,6 +69,37 @@ function mostrarToast(mensagem, tipo = 'ok') {
 }
 
 /**
+ * Formata como "Nome Próprio": primeira letra de cada palavra maiúscula,
+ * resto minúsculo, mas mantém conectores comuns em português em minúsculo
+ * (exceto se forem a primeira palavra). Usado pra nome de pessoa, item do
+ * cardápio, categoria, ingrediente, etc — evita "joao", "JOAO", "João" misturados.
+ */
+const CONECTORES_MINUSCULOS = ['de', 'da', 'do', 'das', 'dos', 'e'];
+
+function formatarTitulo(texto) {
+  if (!texto) return texto;
+  const limpo = texto.trim().replace(/\s+/g, ' ');
+  if (!limpo) return limpo;
+  return limpo.split(' ').map((palavra, i) => {
+    const minuscula = palavra.toLowerCase();
+    if (i > 0 && CONECTORES_MINUSCULOS.includes(minuscula)) return minuscula;
+    return minuscula.charAt(0).toUpperCase() + minuscula.slice(1);
+  }).join(' ');
+}
+
+/**
+ * Formata só a primeira letra em maiúscula, sem mexer no resto —
+ * usado em campos de texto corrido (descrição, motivo), onde title-case
+ * em cada palavra ficaria estranho.
+ */
+function formatarPrimeiraLetra(texto) {
+  if (!texto) return texto;
+  const limpo = texto.trim().replace(/\s+/g, ' ');
+  if (!limpo) return limpo;
+  return limpo.charAt(0).toUpperCase() + limpo.slice(1);
+}
+
+/**
  * Monta o menu do sistema (logo + navegação + usuário/sair) — aparece
  * em toda tela, mostrando só o que aquele nível de acesso pode ver.
  * No notebook fica como sidebar fixa lateral; no celular vira barra no topo.

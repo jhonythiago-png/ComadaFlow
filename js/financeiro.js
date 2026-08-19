@@ -298,7 +298,7 @@ function fecharModalDespesa() {
 }
 
 async function salvarDespesa() {
-  const descricao = document.getElementById('input-despesa-descricao').value.trim();
+  const descricao = formatarPrimeiraLetra(document.getElementById('input-despesa-descricao').value.trim());
   const categoria = document.getElementById('input-despesa-categoria').value;
   const valorTexto = document.getElementById('input-despesa-valor').value;
   const vencimento = document.getElementById('input-despesa-vencimento').value;
@@ -390,7 +390,7 @@ function fecharModalSangria() {
 async function salvarSangria() {
   const tipo = document.getElementById('input-sangria-tipo').value;
   const valorTexto = document.getElementById('input-sangria-valor').value;
-  const motivo = document.getElementById('input-sangria-motivo').value.trim();
+  const motivo = formatarPrimeiraLetra(document.getElementById('input-sangria-motivo').value.trim());
   const valorAbs = parseFloat(valorTexto.replace(',', '.'));
 
   if (!valorAbs || valorAbs <= 0) {

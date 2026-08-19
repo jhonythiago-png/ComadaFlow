@@ -82,8 +82,9 @@ function preencherSelectCategorias() {
 }
 
 async function renomearCategoria(id, novoNome) {
-  if (!novoNome.trim()) return;
-  const { error } = await supabaseClient.from('categorias_cardapio').update({ nome: novoNome.trim() }).eq('id', id);
+  const nomeFormatado = formatarTitulo(novoNome);
+  if (!nomeFormatado) return;
+  const { error } = await supabaseClient.from('categorias_cardapio').update({ nome: nomeFormatado }).eq('id', id);
   if (error) { mostrarToast('Erro ao renomear categoria.', 'erro'); return; }
   mostrarToast('Categoria atualizada.');
   await carregarCategorias();
@@ -98,7 +99,7 @@ async function reordenarCategoria(id, novaOrdem) {
 }
 
 async function criarNovaCategoria() {
-  const nome = document.getElementById('input-nova-categoria').value.trim();
+  const nome = formatarTitulo(document.getElementById('input-nova-categoria').value.trim());
   if (!nome) { mostrarToast('Digite o nome da categoria.', 'erro'); return; }
 
   const proximaOrdem = estado.categorias.length > 0
@@ -160,7 +161,7 @@ async function alternarDisponibilidadeIngrediente(id, novoValor) {
 }
 
 async function criarNovoIngrediente() {
-  const nome = document.getElementById('input-novo-ingrediente').value.trim();
+  const nome = formatarTitulo(document.getElementById('input-novo-ingrediente').value.trim());
   if (!nome) { mostrarToast('Digite o nome do ingrediente.', 'erro'); return; }
 
   const { error } = await supabaseClient.from('ingredientes').insert({
@@ -196,7 +197,7 @@ function fecharModalIngrediente() {
 }
 
 async function salvarIngrediente() {
-  const nome = document.getElementById('input-edit-ingrediente-nome').value.trim();
+  const nome = formatarTitulo(document.getElementById('input-edit-ingrediente-nome').value.trim());
   const disponivel = document.getElementById('input-edit-ingrediente-disponivel').checked;
 
   if (!nome) { mostrarToast('Digite o nome do ingrediente.', 'erro'); return; }
@@ -436,8 +437,8 @@ function atualizarPrecoIngredienteModal(ingredienteId, valor) {
 }
 
 async function salvarItem() {
-  const nome = document.getElementById('input-item-nome').value.trim();
-  const descricao = document.getElementById('input-item-descricao').value.trim();
+  const nome = formatarTitulo(document.getElementById('input-item-nome').value.trim());
+  const descricao = formatarPrimeiraLetra(document.getElementById('input-item-descricao').value.trim());
   const precoTexto = document.getElementById('input-item-preco').value;
   const categoriaId = document.getElementById('input-item-categoria').value;
   const tipoMontagem = document.getElementById('input-item-tipo').value;
