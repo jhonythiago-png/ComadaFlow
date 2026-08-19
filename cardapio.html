@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#17140F">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="ComandaFlow">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<title>ComandaFlow — Cardápio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<link rel="stylesheet" href="css/tokens.css">
+<style>
+  html { height: 100%; }
+
+  .conteudo {
+    padding: 24px 20px calc(48px + env(safe-area-inset-bottom));
+    max-width: 780px; width: 100%; margin: 0 auto; box-sizing: border-box;
+  }
+  @media (min-width: 900px) {
+    .conteudo { max-width: 900px; padding: 32px 40px 60px; }
+  }
+
+  .secao-titulo { font-family: var(--font-display); font-weight: 700; font-size: 16px; margin-bottom: 14px; }
+
+  .painel {
+    background: var(--ink-soft); border: 1px solid var(--ink-line); border-radius: var(--radius-lg);
+    padding: 20px 22px; margin-bottom: 20px;
+  }
+  .painel-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 10px; }
+  .painel-header h3 { font-family: var(--font-display); font-size: 16px; font-weight: 700; }
+
+  /* ---- Categorias ---- */
+  .categoria-linha { display: flex; gap: 8px; margin-bottom: 8px; }
+  .categoria-linha input[type="text"] { flex: 1; }
+  .categoria-ordem { width: 64px; flex-shrink: 0; text-align: center; }
+  .linha-nova-categoria { display: flex; gap: 8px; margin-top: 12px; }
+  .linha-nova-categoria input { flex: 1; }
+  .linha-nova-categoria button { flex-shrink: 0; padding: 10px 16px; }
+
+  /* ---- Itens ---- */
+  .grupo-categoria { margin-bottom: 20px; }
+  .grupo-categoria:last-child { margin-bottom: 0; }
+  .grupo-categoria-titulo {
+    font-family: var(--font-mono); font-size: 11px; text-transform: uppercase; color: var(--crust);
+    letter-spacing: .04em; margin-bottom: 8px;
+  }
+  .item-linha {
+    display: flex; justify-content: space-between; align-items: center;
+    background: var(--ink); border: 1px solid var(--ink-line); border-radius: var(--radius-sm);
+    padding: 12px 14px; margin-bottom: 8px; gap: 12px;
+  }
+  .item-linha.indisponivel { opacity: .5; }
+  .item-linha-clicavel { flex: 1; min-width: 0; cursor: pointer; }
+  .item-linha-nome { font-size: 13.5px; font-weight: 600; display: flex; align-items: center; gap: 6px; }
+  .badge-destaque-mini {
+    font-family: var(--font-mono); font-size: 9px; background: var(--paprika); color: #fff;
+    padding: 2px 6px; border-radius: 4px; text-transform: uppercase;
+  }
+  .item-linha-detalhe { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+
+  .switch-disponivel { position: relative; display: inline-block; width: 40px; height: 24px; flex-shrink: 0; }
+  .switch-disponivel input { opacity: 0; width: 0; height: 0; }
+  .switch-slider {
+    position: absolute; cursor: pointer; inset: 0; background: var(--ink-line); border-radius: 24px; transition: .2s;
+  }
+  .switch-slider::before {
+    content: ''; position: absolute; height: 18px; width: 18px; left: 3px; bottom: 3px;
+    background: var(--text-muted); border-radius: 50%; transition: .2s;
+  }
+  .switch-disponivel input:checked + .switch-slider { background: rgba(92,122,82,.35); }
+  .switch-disponivel input:checked + .switch-slider::before { transform: translateX(16px); background: var(--ok); }
+
+  .btn-novo-item { padding: 9px 18px; width: auto; }
+  .aviso-vazio-pequeno { color: var(--text-faint); font-size: 13px; padding: 4px 0; }
+
+  /* ---- Modal item ---- */
+  #modal-item-overlay {
+    display: none; position: fixed; inset: 0; background: rgba(0,0,0,.6);
+    align-items: center; justify-content: center; z-index: 100; padding: 20px;
+  }
+  #modal-item-conteudo {
+    background: var(--ink); border-radius: var(--radius-lg); padding: 22px;
+    width: 100%; max-width: 460px; max-height: 85vh; overflow-y: auto;
+  }
+  #modal-item-conteudo h3 { font-family: var(--font-display); margin-bottom: 16px; }
+  .campo { margin-bottom: 14px; }
+  .campo label { display: block; font-size: 12px; color: var(--text-muted); margin-bottom: 6px; }
+  .linha-dupla { display: flex; gap: 12px; }
+  .linha-dupla .campo { flex: 1; }
+  .campo-checkbox { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; }
+  .campo-checkbox input { width: auto; }
+  .modal-botoes { display: flex; gap: 10px; margin-top: 8px; }
+  .modal-botoes button { flex: 1; }
+  #btn-excluir-item { color: var(--paprika); font-size: 12px; text-decoration: underline; margin-top: 14px; display: block; text-align: center; }
+</style>
+</head>
+<body class="app-shell">
+
+<div id="sidebar"></div>
+
+<div class="main-area">
+<div class="conteudo">
+
+  <div class="painel">
+    <div class="painel-header"><h3>Categorias</h3></div>
+    <div id="lista-categorias"></div>
+    <div class="linha-nova-categoria">
+      <input type="text" id="input-nova-categoria" placeholder="Nome da nova categoria">
+      <button class="btn-primary" onclick="criarNovaCategoria()">+ Adicionar</button>
+    </div>
+  </div>
+
+  <div class="painel">
+    <div class="painel-header">
+      <h3>Itens do cardápio</h3>
+      <button class="btn-primary btn-novo-item" onclick="abrirModalItem(null)">+ Novo item</button>
+    </div>
+    <div id="lista-itens"></div>
+  </div>
+
+</div>
+</div>
+
+<!-- MODAL: item (criar/editar) -->
+<div id="modal-item-overlay">
+  <div id="modal-item-conteudo">
+    <h3 id="modal-item-titulo">Novo item</h3>
+
+    <div class="campo">
+      <label>Nome</label>
+      <input type="text" id="input-item-nome" placeholder="Ex: Pastel de Carne">
+    </div>
+    <div class="campo">
+      <label>Descrição (opcional)</label>
+      <input type="text" id="input-item-descricao" placeholder="Ex: Carne, presunto, queijo...">
+    </div>
+    <div class="linha-dupla">
+      <div class="campo">
+        <label>Preço base (R$)</label>
+        <input type="text" inputmode="decimal" id="input-item-preco" placeholder="0,00">
+      </div>
+      <div class="campo">
+        <label>Categoria</label>
+        <select id="input-item-categoria"></select>
+      </div>
+    </div>
+    <div class="campo">
+      <label>Tipo de montagem</label>
+      <select id="input-item-tipo" onchange="atualizarVisibilidadeQtdSabores()">
+        <option value="fixo">Fixo (ingredientes prontos, só remove via observação)</option>
+        <option value="monte_sabores">Monte-sabores (escolhe N sabores inclusos, extra paga)</option>
+        <option value="escolha_um">Escolha 1 sabor (sem acréscimo)</option>
+        <option value="venda_direta">Venda direta (sem sabor nenhum)</option>
+      </select>
+    </div>
+    <div class="campo" id="campo-qtd-sabores" style="display:none;">
+      <label>Quantos sabores inclusos na cota</label>
+      <input type="number" id="input-item-qtd-sabores" min="1" placeholder="Ex: 2">
+    </div>
+    <div class="campo-checkbox">
+      <input type="checkbox" id="input-item-destaque">
+      <label for="input-item-destaque" style="margin:0;">Destaque ("Mais Pedido")</label>
+    </div>
+    <div class="campo-checkbox">
+      <input type="checkbox" id="input-item-disponivel" checked>
+      <label for="input-item-disponivel" style="margin:0;">Disponível pro atendente lançar</label>
+    </div>
+
+    <div class="modal-botoes">
+      <button class="btn-ghost" onclick="fecharModalItem()">Cancelar</button>
+      <button class="btn-primary" onclick="salvarItem()">Salvar</button>
+    </div>
+    <button id="btn-excluir-item" onclick="excluirItem()">Excluir este item</button>
+  </div>
+</div>
+
+<script src="js/supabase-client.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/cardapio.js"></script>
+</body>
+</html>
