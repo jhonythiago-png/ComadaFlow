@@ -182,6 +182,14 @@ function mostrarAba(aba) {
   document.querySelectorAll('.aba-botao').forEach(el => el.classList.remove('on'));
   document.getElementById(`aba-${aba}`).style.display = 'block';
   document.getElementById(`botao-aba-${aba}`).classList.add('on');
+
+  // Segurança extra: limpa os campos de senha ao abrir "Minha Conta" —
+  // mesmo que o navegador tente autopreencher com senha salva de outra
+  // conta, o campo sempre começa vazio de verdade
+  if (aba === 'minhaconta') {
+    document.getElementById('input-minha-conta-senha').value = '';
+    document.getElementById('input-minha-conta-senha-confirmar').value = '';
+  }
 }
 
 // ------------------------------------------------------------
