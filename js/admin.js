@@ -103,6 +103,9 @@ function renderEstabelecimentos() {
           <button class="btn-toggle-cliente" onclick="alternarStatusEstabelecimento('${e.id}', ${!e.ativo})">
             ${e.ativo ? 'Desativar' : 'Ativar'}
           </button>
+          <button class="btn-resetar-senha" onclick="abrirModalResetarSenha('${e.id}', '${e.nome.replace(/'/g, "\\'")}')">
+            Resetar senha do Master
+          </button>
           <button class="btn-excluir-cliente" onclick="confirmarExcluirEstabelecimento('${e.id}', '${e.nome.replace(/'/g, "\\'")}')">
             Excluir
           </button>
@@ -117,6 +120,68 @@ async function alternarStatusEstabelecimento(id, novoStatus) {
   if (error) { mostrarToast('Erro ao atualizar status.', 'erro'); console.error(error); return; }
   mostrarToast(novoStatus ? 'Cliente reativado.' : 'Cliente desativado.');
   await carregarEstabelecimentos();
+}
+
+// ------------------------------------------------------------
+// Resetar senha do Master (esqueceu/perdeu a senha)
+// ------------------------------------------------------------
+let estabelecimentoParaResetarSenhaId = null;
+
+function abrirModalResetarSenha(estabelecimentoId, nomeCliente) {
+  estabelecimentoParaResetarSenhaId = estabelecimentoId;
+  document.getElementById('resetar-senha-cliente-nome').textContent = nomeCliente;
+  document.getElementById('input-resetar-senha').value = '';
+  document.getElementById('input-resetar-senha-confirmar').value = '';
+  document.getElementById('modal-resetar-senha-overlay').style.display = 'flex';
+}
+
+function fecharModalResetarSenha() {
+  document.getElementById('modal-resetar-senha-overlay').style.display = 'none';
+  estabelecimentoParaResetarSenhaId = null;
+}
+
+async function confirmarResetarSenha() {
+  const novaSenha = document.getElementById('input-resetar-senha').value;
+  const confirmarSenha = document.getElementById('input-resetar-senha-confirmar').value;
+
+  if (!novaSenha || novaSenha.length < 6) {
+    mostrarToast('Senha precisa ter pelo menos 6 caracteres.', 'erro');
+    return;
+  }
+  if (novaSenha !== confirmarSenha) {
+    mostrarToast('As senhas não são iguais. Confere de novo.', 'erro');
+    return;
+  }
+
+  try {
+    const { data: sessao } = await supabaseClient.auth.getSession();
+
+    const resposta = await fetch(`${SUPABASE_URL}/functions/v1/resetar-senha-master`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${sessao.session.access_token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        estabelecimento_id: estabelecimentoParaResetarSenhaId,
+        nova_senha_provisoria: novaSenha,
+      }),
+    });
+
+    const resultado = await resposta.json();
+
+    if (!resposta.ok) {
+      mostrarToast(resultado.erro || 'Erro ao resetar senha.', 'erro');
+      return;
+    }
+
+    mostrarToast(`Senha provisória definida! Usuário: ${resultado.username}. Ele vai ser obrigado a trocar no próximo login.`);
+    fecharModalResetarSenha();
+
+  } catch (erro) {
+    console.error(erro);
+    mostrarToast('Erro de conexão.', 'erro');
+  }
 }
 
 function confirmarExcluirEstabelecimento(id, nome) {

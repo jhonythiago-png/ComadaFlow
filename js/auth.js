@@ -25,7 +25,7 @@ async function verificarAutenticacao() {
 
   const { data: perfil, error } = await supabaseClient
     .from('perfis')
-    .select('id, nome, username, nivel_acesso, estabelecimento_id, ativo')
+    .select('id, nome, username, nivel_acesso, estabelecimento_id, ativo, precisa_trocar_senha')
     .eq('auth_user_id', sessao.session.user.id)
     .single();
 
@@ -42,7 +42,117 @@ async function verificarAutenticacao() {
   }
 
   sessionStorage.setItem(CHAVE_PERFIL, JSON.stringify(perfil));
+
+  // Se a senha foi resetada pelo admin (esqueceu/perdeu), bloqueia TUDO
+  // até a pessoa definir uma senha nova — funciona em qualquer tela,
+  // já que essa função roda no início de toda página do sistema
+  if (perfil.precisa_trocar_senha) {
+    exibirBloqueioTrocaSenhaObrigatoria();
+    return null; // impede a tela de continuar carregando por baixo do bloqueio
+  }
+
   return perfil;
+}
+
+/**
+ * Mostra uma tela cheia, por cima de tudo, obrigando a pessoa a definir
+ * uma senha nova antes de conseguir usar qualquer parte do sistema.
+ * Injeta o próprio HTML/CSS via JS — assim funciona em QUALQUER página
+ * sem precisar editar o HTML de cada tela uma por uma.
+ */
+function exibirBloqueioTrocaSenhaObrigatoria() {
+  if (document.getElementById('bloqueio-troca-senha-overlay')) return; // já está mostrando
+
+  const overlay = document.createElement('div');
+  overlay.id = 'bloqueio-troca-senha-overlay';
+  overlay.style.cssText = 'position:fixed; inset:0; background:#17140F; z-index:99999; display:flex; align-items:center; justify-content:center; padding:20px; font-family:Inter,sans-serif;';
+  overlay.innerHTML = `
+    <div style="background:#211D16; border:1px solid #38322A; border-radius:16px; padding:28px; width:100%; max-width:380px;">
+      <h2 style="font-family:'Bricolage Grotesque',sans-serif; color:#fff; margin-bottom:8px; font-size:19px;">Defina uma senha nova</h2>
+      <p style="color:#8A7C68; font-size:13px; margin-bottom:20px;">Sua senha foi resetada. Antes de continuar, defina uma senha só sua.</p>
+
+      <div style="margin-bottom:12px;">
+        <label style="display:block; font-size:12px; color:#8A7C68; margin-bottom:5px;">Nova senha (mínimo 6 caracteres)</label>
+        <div style="display:flex; gap:8px;">
+          <input type="password" id="bloqueio-nova-senha" style="flex:1; padding:10px; border-radius:8px; border:1px solid #38322A; background:#17140F; color:#fff;">
+          <button type="button" onclick="const c=document.getElementById('bloqueio-nova-senha'); const m=c.type==='text'; c.type=m?'password':'text'; this.textContent=m?'👁':'🙈';" style="flex-shrink:0; padding:0 14px; border-radius:8px; border:1px solid #38322A; background:transparent; color:#fff;">👁</button>
+        </div>
+      </div>
+      <div style="margin-bottom:20px;">
+        <label style="display:block; font-size:12px; color:#8A7C68; margin-bottom:5px;">Confirmar nova senha</label>
+        <div style="display:flex; gap:8px;">
+          <input type="password" id="bloqueio-nova-senha-confirmar" style="flex:1; padding:10px; border-radius:8px; border:1px solid #38322A; background:#17140F; color:#fff;">
+          <button type="button" onclick="const c=document.getElementById('bloqueio-nova-senha-confirmar'); const m=c.type==='text'; c.type=m?'password':'text'; this.textContent=m?'👁':'🙈';" style="flex-shrink:0; padding:0 14px; border-radius:8px; border:1px solid #38322A; background:transparent; color:#fff;">👁</button>
+        </div>
+      </div>
+
+      <div id="bloqueio-troca-senha-erro" style="color:#D6432A; font-size:12px; margin-bottom:12px; display:none;"></div>
+
+      <button id="bloqueio-troca-senha-botao" onclick="confirmarTrocaSenhaObrigatoria()" style="width:100%; padding:12px; border-radius:10px; border:none; background:linear-gradient(135deg,#ff7a1a,#ff2d78); color:#fff; font-weight:700; font-size:14px;">Definir senha e continuar</button>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+}
+
+async function confirmarTrocaSenhaObrigatoria() {
+  const novaSenha = document.getElementById('bloqueio-nova-senha').value;
+  const confirmarSenha = document.getElementById('bloqueio-nova-senha-confirmar').value;
+  const erroEl = document.getElementById('bloqueio-troca-senha-erro');
+  const botao = document.getElementById('bloqueio-troca-senha-botao');
+
+  erroEl.style.display = 'none';
+
+  if (!novaSenha || novaSenha.length < 6) {
+    erroEl.textContent = 'A senha precisa ter pelo menos 6 caracteres.';
+    erroEl.style.display = 'block';
+    return;
+  }
+  if (novaSenha !== confirmarSenha) {
+    erroEl.textContent = 'As senhas não são iguais. Confere de novo.';
+    erroEl.style.display = 'block';
+    return;
+  }
+
+  botao.disabled = true;
+  botao.textContent = 'Salvando...';
+
+  try {
+    const perfilAtual = obterPerfilAtual();
+    const { data: sessao } = await supabaseClient.auth.getSession();
+
+    const resposta = await fetch(`${SUPABASE_URL}/functions/v1/atualizar-credenciais`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${sessao.session.access_token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        novo_username: perfilAtual.username, // mantém o mesmo username, só troca a senha
+        nova_senha: novaSenha,
+      }),
+    });
+
+    const resultado = await resposta.json();
+
+    if (!resposta.ok) {
+      erroEl.textContent = resultado.erro || 'Erro ao salvar. Tenta de novo.';
+      erroEl.style.display = 'block';
+      botao.disabled = false;
+      botao.textContent = 'Definir senha e continuar';
+      return;
+    }
+
+    // Recarrega a página — na próxima verificação, precisa_trocar_senha já
+    // vai vir false, e o sistema libera o acesso normalmente
+    window.location.reload();
+
+  } catch (erro) {
+    console.error(erro);
+    erroEl.textContent = 'Erro de conexão. Tenta de novo.';
+    erroEl.style.display = 'block';
+    botao.disabled = false;
+    botao.textContent = 'Definir senha e continuar';
+  }
 }
 
 function obterPerfilAtual() {
