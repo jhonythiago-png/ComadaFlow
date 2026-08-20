@@ -1,5 +1,5 @@
 // ============================================================
-// ComandaFlow — App do Atendente
+// Evvo Food — App do Atendente
 // ============================================================
 
 const estado = {
@@ -92,7 +92,7 @@ function escutarMudancasComandas() {
 
         // Como tiramos o filtro do servidor, confirma aqui no código
         // que a mudança é do MESMO estabelecimento (importante quando
-        // existirem outros clientes usando o ComandaFlow no futuro)
+        // existirem outros clientes usando o Evvo Food no futuro)
         const linhaMudada = payload.new?.estabelecimento_id ? payload.new : payload.old;
         if (linhaMudada?.estabelecimento_id !== estado.perfil.estabelecimento_id) {
           return;

@@ -1,5 +1,5 @@
 // ============================================================
-// ComandaFlow — Gerenciar Cardápio (Master)
+// Evvo Food — Gerenciar Cardápio (Master)
 // ============================================================
 
 const estado = {

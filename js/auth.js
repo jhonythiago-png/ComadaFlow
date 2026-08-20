@@ -1,5 +1,5 @@
 // ============================================================
-// ComandaFlow — Autenticação
+// Evvo Food — Autenticação
 // ============================================================
 
 const CHAVE_PERFIL = 'comandaflow_perfil';
@@ -251,7 +251,8 @@ function injetarNavegacao(perfil, paginaAtual) {
   `).join('');
 
   container.innerHTML = `
-    <span class="sidebar-logo">ComandaFlow</span>
+    <span class="sidebar-logo">Evvo Food</span>
+    <span class="sidebar-slogan">A evolução no comando do seu negócio.</span>
     <nav class="sidebar-nav">${linksHtml}</nav>
     <div class="sidebar-footer">
       <span>${perfil.nome}</span>

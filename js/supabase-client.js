@@ -1,5 +1,5 @@
 // ============================================================
-// ComandaFlow — Conexão com Supabase
+// Evvo Food — Conexão com Supabase
 // ⚠️ TROQUE os valores abaixo pelos do seu projeto:
 //    Painel Supabase → Project Settings → API
 // ============================================================

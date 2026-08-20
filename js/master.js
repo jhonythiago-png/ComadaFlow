@@ -1,5 +1,5 @@
 // ============================================================
-// ComandaFlow — Painel Master: Funcionários + Configurações
+// Evvo Food — Painel Master: Funcionários + Configurações
 // ============================================================
 
 const estado = {

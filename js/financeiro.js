@@ -1,5 +1,5 @@
 // ============================================================
-// ComandaFlow — Painel Financeiro (Master)
+// Evvo Food — Painel Financeiro (Master)
 // ============================================================
 
 const estado = {

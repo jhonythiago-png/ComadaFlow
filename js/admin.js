@@ -1,5 +1,5 @@
 // ============================================================
-// ComandaFlow — Painel Admin (dono da plataforma)
+// Evvo Food — Painel Admin (dono da plataforma)
 // ============================================================
 
 const estado = {
