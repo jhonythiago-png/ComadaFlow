@@ -69,6 +69,33 @@
   .campo-checkbox { display: flex; align-items: center; gap: 8px; margin-bottom: 16px; }
   .campo-checkbox input { width: auto; }
 
+  /* ---- Aba Informações / Guia de uso ---- */
+  #aba-informacoes .painel { margin-bottom: 20px; }
+  .info-paragrafo { font-size: 13.5px; color: var(--text-primary); line-height: 1.6; margin-bottom: 12px; }
+  .info-paragrafo:last-child { margin-bottom: 0; }
+  .info-lista, .info-lista-numerada { margin: 0 0 12px; padding-left: 20px; }
+  .info-lista li, .info-lista-numerada li { font-size: 13px; color: var(--text-primary); line-height: 1.6; margin-bottom: 6px; }
+  .info-lista:last-child, .info-lista-numerada:last-child { margin-bottom: 0; }
+  .info-subsecao {
+    font-family: var(--font-display); font-weight: 700; font-size: 14.5px; color: var(--crust);
+    margin: 20px 0 10px;
+  }
+  .info-subsecao:first-of-type { margin-top: 4px; }
+  .info-tipo-card {
+    background: var(--ink); border: 1px solid var(--ink-line); border-radius: var(--radius-md);
+    padding: 14px 16px; margin-bottom: 12px;
+  }
+  .info-tipo-card:last-of-type { margin-bottom: 0; }
+  .info-tipo-titulo { font-family: var(--font-display); font-weight: 700; font-size: 14px; margin-bottom: 6px; }
+  .info-tipo-card p { font-size: 13px; color: var(--text-primary); line-height: 1.6; margin-bottom: 8px; }
+  .info-tipo-card p:last-child { margin-bottom: 0; }
+  .info-tipo-card ul { margin: 0; padding-left: 18px; }
+  .info-tipo-card li { font-size: 13px; color: var(--text-primary); line-height: 1.6; margin-bottom: 4px; }
+  .info-aviso {
+    background: rgba(214,67,42,.1); border: 1px solid rgba(214,67,42,.3); border-radius: var(--radius-md);
+    padding: 12px 14px; font-size: 12.5px; color: var(--text-primary); line-height: 1.6; margin-top: 16px;
+  }
+
   /* ---- Modal funcionário ---- */
   #modal-funcionario-overlay {
     display: none; position: fixed; inset: 0; background: rgba(0,0,0,.6);
@@ -108,6 +135,7 @@
     <button class="aba-botao on" id="botao-aba-funcionarios" onclick="mostrarAba('funcionarios')">Funcionários</button>
     <button class="aba-botao" id="botao-aba-configuracoes" onclick="mostrarAba('configuracoes')">Configurações</button>
     <button class="aba-botao" id="botao-aba-minhaconta" onclick="mostrarAba('minhaconta')">Minha Conta</button>
+    <button class="aba-botao" id="botao-aba-informacoes" onclick="mostrarAba('informacoes')">ℹ️ Informações</button>
   </div>
 
   <!-- ABA: Funcionários -->
@@ -179,6 +207,142 @@
 
       <button class="btn-primary" onclick="salvarMinhaConta()">Salvar minhas credenciais</button>
     </div>
+  </div>
+
+  <!-- ABA: Informações / Guia de uso -->
+  <div class="aba-conteudo" id="aba-informacoes" style="display:none;">
+
+    <div class="painel">
+      <div class="painel-header"><h3>👋 Visão geral do sistema</h3></div>
+      <p class="info-paragrafo">
+        O ComandaFlow tem 4 áreas principais, acessíveis pelo menu:
+      </p>
+      <ul class="info-lista">
+        <li><strong>Atendente</strong> — onde qualquer funcionário abre comandas e lança os pedidos</li>
+        <li><strong>Caixa</strong> — onde qualquer funcionário fecha a conta e recebe o pagamento</li>
+        <li><strong>Financeiro</strong> — só o Master vê: receita, despesas, saldo, ajuste de caixa</li>
+        <li><strong>Config</strong> — só o Master vê: esta tela, com funcionários, cardápio e essas instruções</li>
+      </ul>
+      <p class="info-paragrafo">
+        Um <strong>Funcionário</strong> consegue atender e fechar conta normalmente, mas
+        <strong>não</strong> enxerga Financeiro nem essa tela de Configurações — isso é só do Master.
+      </p>
+    </div>
+
+    <div class="painel">
+      <div class="painel-header"><h3>🍽️ Cardápio — guia completo</h3></div>
+      <p class="info-paragrafo">
+        Essa é a parte que mais gera dúvida, então vamos com calma. O cardápio tem
+        <strong>3 peças</strong> que se encaixam: <strong>Categorias</strong>, <strong>Itens</strong> e <strong>Ingredientes</strong>.
+      </p>
+
+      <div class="info-subsecao">1. Categorias</div>
+      <p class="info-paragrafo">
+        São as "gavetas" que organizam o cardápio — ex: Tradicionais, Especiais, Bebidas.
+        Só servem pra agrupar visualmente. Você define o nome e a ordem de exibição
+        (número menor aparece primeiro pro atendente).
+      </p>
+
+      <div class="info-subsecao">2. Ingredientes — o catálogo compartilhado</div>
+      <p class="info-paragrafo">
+        Antes de criar um item, é bom já ter os ingredientes/sabores que ele vai usar
+        cadastrados aqui (ex: Carne, Queijo, Bacon, Chocolate). Esse catálogo é
+        <strong>compartilhado</strong> — o mesmo "Bacon" pode ser usado em vários itens
+        diferentes, cada um decidindo o papel dele (ver abaixo).
+      </p>
+
+      <div class="info-subsecao">3. Itens — os 4 tipos de montagem (o ponto mais importante)</div>
+      <p class="info-paragrafo">
+        Ao criar um item, você escolhe um <strong>tipo de montagem</strong>. É essa escolha
+        que define como o item aparece pro atendente na hora de lançar o pedido:
+      </p>
+
+      <div class="info-tipo-card">
+        <div class="info-tipo-titulo">🔹 Fixo</div>
+        <p>O item já vem pronto, com uma receita fixa (ex: Pastel de Carne, Frango Especial). O atendente só pode:</p>
+        <ul class="info-lista">
+          <li><strong>Remover</strong> algo do que já vem incluso, de graça (ex: "sem cebola")</li>
+          <li><strong>Adicionar</strong> um acréscimo pago, se você tiver cadastrado algum pra esse item (ex: "+ Bacon R$3")</li>
+        </ul>
+        <p>Ao editar um item Fixo, você marca 2 listas separadas: <strong>"Ingredientes padrão"</strong> (o que já vem, removível de graça) e <strong>"Acréscimos disponíveis"</strong> (opcional, com preço).</p>
+      </div>
+
+      <div class="info-tipo-card">
+        <div class="info-tipo-titulo">🔹 Monte-sabores</div>
+        <p>O cliente monta o próprio item escolhendo vários sabores (ex: "Monte seu Pastel — 2 sabores"). Você define:</p>
+        <ul class="info-lista">
+          <li><strong>Quantos sabores vêm inclusos</strong> na cota (ex: 2)</li>
+          <li>A <strong>lista de sabores disponíveis</strong>, cada um com um preço — esse preço só é cobrado se o cliente escolher <strong>além</strong> da cota (ex: escolheu 3 sabores numa cota de 2 → paga o 3º extra)</li>
+        </ul>
+      </div>
+
+      <div class="info-tipo-card">
+        <div class="info-tipo-titulo">🔹 Escolha 1 sabor</div>
+        <p>O cliente escolhe exatamente <strong>1</strong> sabor entre as opções, sem nenhum custo extra (ex: Pastel Doce, Suco Natural — a pessoa escolhe "Chocolate" ou "Morango", mas o preço do item já é fixo).</p>
+      </div>
+
+      <div class="info-tipo-card">
+        <div class="info-tipo-titulo">🔹 Venda direta</div>
+        <p>Não tem sabor nenhum pra escolher — é só "quero esse item" e pronto (ex: Refrigerante Lata, Água Mineral).</p>
+      </div>
+
+      <div class="info-subsecao">Exemplo prático — criando um item Fixo com acréscimo</div>
+      <ol class="info-lista-numerada">
+        <li>Cadastra os ingredientes que vai usar (se ainda não existirem): ex: "Frango", "Catupiry", "Cheddar"</li>
+        <li>Cria o item: nome "Frango Especial", categoria "Especiais", preço base R$18, tipo de montagem "Fixo"</li>
+        <li>Na lista <strong>"Ingredientes padrão"</strong>, marca Frango e Catupiry (o que já vem de fábrica)</li>
+        <li>Na lista <strong>"Acréscimos disponíveis"</strong>, marca Cheddar e define o preço, ex: R$3,00</li>
+        <li>Salva — pronto, o atendente já vai ver a opção de adicionar Cheddar por R$3 nesse item</li>
+      </ol>
+
+      <div class="info-aviso">
+        ⚠️ <strong>Atenção:</strong> um mesmo ingrediente não pode ser "padrão" E "acréscimo" ao mesmo tempo
+        no <strong>mesmo</strong> item (regra do sistema, evita confusão tipo "remove de graça mas cobra pra
+        adicionar de volta"). Se quiser vender "dose dupla" de algo que já é padrão, cadastre um ingrediente
+        com nome diferente, tipo "Catupiry Extra", e use ele só como acréscimo.
+      </div>
+    </div>
+
+    <div class="painel">
+      <div class="painel-header"><h3>🧾 Atendente — abrindo e lançando pedidos</h3></div>
+      <ul class="info-lista">
+        <li><strong>Mesa</strong>: informa o número; se for mais de uma pessoa na mesma mesa, dá pra abrir uma comanda por pessoa (ex: Mesa 04 · Jhony, Mesa 04 · Thiago)</li>
+        <li><strong>Avulsa</strong>: pra venda de balcão, sem mesa — nome do cliente é opcional</li>
+        <li><strong>Entrega</strong>: só aparece se "Permite pedidos de entrega" estiver ligado (aba Configurações) — pede nome, telefone, endereço e taxa</li>
+        <li>O botão 📋 dentro da comanda mostra os pedidos já enviados pra cozinha, com opção de cancelar item ou a comanda inteira</li>
+        <li>O botão "Imprimir conferência" tira um extrato do que já foi pedido, sem fechar a conta</li>
+      </ul>
+    </div>
+
+    <div class="painel">
+      <div class="painel-header"><h3>💰 Caixa — fechando a conta</h3></div>
+      <ul class="info-lista">
+        <li>Clica na comanda → revisa os itens (dá pra remover algo lançado errado, ou transferir item entre pessoas da mesma mesa)</li>
+        <li>Define a(s) forma(s) de pagamento — dá pra dividir entre várias formas na mesma conta</li>
+        <li>Se for <strong>Dinheiro</strong>, tem a calculadora de troco: digita quanto o cliente vai pagar, o sistema calcula o troco sozinho e já imprime no cupom</li>
+        <li><strong>Comanda de entrega</strong> funciona em 3 etapas: 🟡 Preparando → 🔵 Saiu pra entrega (já define a forma de pagamento aqui, pro motoboy saber o que cobrar) → 🟢 Entregue (só agora a venda conta no financeiro de verdade)</li>
+      </ul>
+    </div>
+
+    <div class="painel">
+      <div class="painel-header"><h3>📊 Financeiro</h3></div>
+      <ul class="info-lista">
+        <li><strong>Receita</strong>: soma das comandas fechadas no período escolhido</li>
+        <li><strong>Despesas</strong>: gastos do negócio (aluguel, fornecedor, etc.) — só conta quando marcado como "pago"</li>
+        <li><strong>Ajuste de caixa</strong>: pra registrar diferença real de dinheiro (sobrou ou faltou no caixa) — mexe no <strong>Saldo</strong>, mas nunca na Receita</li>
+        <li><strong>Saldo</strong> = Receita − Despesas pagas ± Ajustes de caixa</li>
+      </ul>
+    </div>
+
+    <div class="painel">
+      <div class="painel-header"><h3>👥 Funcionários</h3></div>
+      <ul class="info-lista">
+        <li><strong>Desativar</strong>: bloqueia o acesso sem apagar nada — reversível a qualquer momento</li>
+        <li><strong>Editar</strong>: muda nome, usuário ou senha de um funcionário</li>
+        <li><strong>Excluir</strong>: apaga de vez, libera o nome de usuário pra criar outra pessoa com o mesmo login — diferente de desativar, não tem volta</li>
+      </ul>
+    </div>
+
   </div>
 
 </div>
