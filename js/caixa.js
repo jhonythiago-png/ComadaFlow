@@ -63,10 +63,10 @@ function escutarMudancas() {
 
 function rotuloComanda(c) {
   if (c.tipo === 'mesa') {
-    return c.identificador_pessoa ? `Mesa ${c.numero_mesa} · ${c.identificador_pessoa}` : `Mesa ${c.numero_mesa}`;
+    return c.identificador_pessoa ? `Mesa ${c.numero_mesa} · ${escapeHtml(c.identificador_pessoa)}` : `Mesa ${c.numero_mesa}`;
   }
-  if (c.tipo === 'entrega') return `Entrega · ${c.nome_cliente || ''}`;
-  return c.nome_cliente || 'Balcão';
+  if (c.tipo === 'entrega') return `Entrega · ${escapeHtml(c.nome_cliente) || ''}`;
+  return escapeHtml(c.nome_cliente) || 'Balcão';
 }
 
 function tempoAberta(dataIso) {
@@ -233,13 +233,13 @@ function renderFechamento() {
   const temIrmas = comandasIrmas && comandasIrmas.length > 0;
 
   document.getElementById('fechamento-itens').innerHTML = itens.map(item => {
-    const sabores = item.pedido_item_ingredientes.map(s => s.ingredientes.nome).join(', ');
+    const sabores = item.pedido_item_ingredientes.map(s => escapeHtml(s.ingredientes.nome)).join(', ');
     return `
       <div class="fechamento-item-linha">
         <div>
-          <div class="item-nome">${item.quantidade}× ${item.itens_cardapio.nome}</div>
+          <div class="item-nome">${item.quantidade}× ${escapeHtml(item.itens_cardapio.nome)}</div>
           ${sabores ? `<div class="item-detalhe">${sabores}</div>` : ''}
-          ${item.observacao ? `<div class="item-detalhe">${item.observacao}</div>` : ''}
+          ${item.observacao ? `<div class="item-detalhe">${escapeHtml(item.observacao)}</div>` : ''}
         </div>
         <div style="display:flex; align-items:center; gap:10px;">
           <span class="item-valor">R$ ${(item.preco_unitario_calculado * item.quantidade).toFixed(2).replace('.', ',')}</span>
@@ -328,7 +328,7 @@ function abrirTransferencia(itemId) {
 
   document.getElementById('lista-comandas-irmas').innerHTML = comandasIrmas.map(c => `
     <button class="btn-ghost btn-comanda-irma" onclick="confirmarTransferencia('${c.id}')">
-      ${c.identificador_pessoa || ('Comanda #' + c.numero_sequencial)}
+      ${c.identificador_pessoa ? escapeHtml(c.identificador_pessoa) : ('Comanda #' + c.numero_sequencial)}
     </button>
   `).join('');
 

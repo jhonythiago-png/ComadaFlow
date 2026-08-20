@@ -100,6 +100,24 @@ function formatarPrimeiraLetra(texto) {
 }
 
 /**
+ * Escapa texto antes de inserir via innerHTML/template literal.
+ * SEM isso, um nome de cliente, motivo de despesa, ou item do cardápio
+ * contendo algo como <img src=x onerror=...> executaria como HTML de
+ * verdade na tela de QUALQUER outro funcionário que visse aquele dado —
+ * é o item mais importante da auditoria de segurança feita em 20/08/2026.
+ * Usar em TODO texto digitado por pessoa que aparece via innerHTML.
+ */
+function escapeHtml(texto) {
+  if (texto === null || texto === undefined) return '';
+  return String(texto)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+/**
  * Monta o menu do sistema (logo + navegação + usuário/sair) — aparece
  * em toda tela, mostrando só o que aquele nível de acesso pode ver.
  * No notebook fica como sidebar fixa lateral; no celular vira barra no topo.

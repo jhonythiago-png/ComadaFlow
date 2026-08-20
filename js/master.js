@@ -94,8 +94,8 @@ function renderFuncionarios() {
   container.innerHTML = estado.funcionarios.map(f => `
     <div class="funcionario-linha">
       <div>
-        <div class="funcionario-nome">${f.nome} ${f.nivel_acesso === 'master' ? '<span class="badge-master">MASTER</span>' : ''}</div>
-        <div class="funcionario-detalhe">usuário: ${f.username}</div>
+        <div class="funcionario-nome">${escapeHtml(f.nome)} ${f.nivel_acesso === 'master' ? '<span class="badge-master">MASTER</span>' : ''}</div>
+        <div class="funcionario-detalhe">usuário: ${escapeHtml(f.username)}</div>
       </div>
       <div class="funcionario-direita">
         <span class="funcionario-status ${f.ativo ? 'ativo' : 'inativo'}">${f.ativo ? 'Ativo' : 'Inativo'}</span>

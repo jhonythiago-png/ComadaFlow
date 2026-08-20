@@ -96,8 +96,8 @@ function renderEstabelecimentos() {
     return `
       <div class="cliente-linha">
         <div>
-          <div class="cliente-nome">${e.nome} ${!e.ativo ? '<span class="badge-inativo">INATIVO</span>' : ''}</div>
-          <div class="cliente-detalhe">slug: ${e.slug} · ${e.qtd_perfis} usuário${e.qtd_perfis !== 1 ? 's' : ''} · desde ${data}</div>
+          <div class="cliente-nome">${escapeHtml(e.nome)} ${!e.ativo ? '<span class="badge-inativo">INATIVO</span>' : ''}</div>
+          <div class="cliente-detalhe">slug: ${escapeHtml(e.slug)} · ${e.qtd_perfis} usuário${e.qtd_perfis !== 1 ? 's' : ''} · desde ${data}</div>
         </div>
         <div class="cliente-acoes">
           <button class="btn-toggle-cliente" onclick="alternarStatusEstabelecimento('${e.id}', ${!e.ativo})">

@@ -161,7 +161,7 @@ function renderCategorias() {
   const nav = document.getElementById('nav-categorias');
   nav.innerHTML = estado.cardapio.map((cat, i) => `
     <button class="chip ${i === estado.categoriaAtivaIndex ? 'on' : ''}" onclick="selecionarCategoria(${i})">
-      ${cat.nome}
+      ${escapeHtml(cat.nome)}
     </button>
   `).join('');
   renderItens();
@@ -180,8 +180,8 @@ function renderItens() {
   grid.innerHTML = categoria.itens_cardapio.map(item => `
     <button class="item-card" onclick="abrirModalItem('${item.id}')">
       ${item.destaque ? '<span class="badge-destaque">Mais pedido</span>' : ''}
-      <div class="item-nome">${item.nome}</div>
-      ${item.descricao ? `<div class="item-descricao">${item.descricao}</div>` : ''}
+      <div class="item-nome">${escapeHtml(item.nome)}</div>
+      ${item.descricao ? `<div class="item-descricao">${escapeHtml(item.descricao)}</div>` : ''}
       <div class="item-preco">R$ ${item.preco_base.toFixed(2).replace('.', ',')}</div>
     </button>
   `).join('');
@@ -224,10 +224,10 @@ async function carregarComandasAbertas() {
 
 function rotuloComanda(c) {
   if (c.tipo === 'mesa') {
-    return c.identificador_pessoa ? `Mesa ${c.numero_mesa} · ${c.identificador_pessoa}` : `Mesa ${c.numero_mesa}`;
+    return c.identificador_pessoa ? `Mesa ${c.numero_mesa} · ${escapeHtml(c.identificador_pessoa)}` : `Mesa ${c.numero_mesa}`;
   }
-  if (c.tipo === 'entrega') return `Entrega · ${c.nome_cliente || 'sem nome'}`;
-  return c.nome_cliente || 'Balcão';
+  if (c.tipo === 'entrega') return `Entrega · ${escapeHtml(c.nome_cliente) || 'sem nome'}`;
+  return escapeHtml(c.nome_cliente) || 'Balcão';
 }
 
 async function selecionarComanda(comandaId) {
@@ -377,7 +377,7 @@ function renderCorpoModal() {
         ${padrao.map(ii => `
           <button class="chip ${estado.ingredientesRemovidos.includes(ii.ingredientes.id) ? 'off' : 'on'}"
                   onclick="alternarRemocao('${ii.ingredientes.id}')">
-            ${ii.ingredientes.nome}
+            ${escapeHtml(ii.ingredientes.nome)}
           </button>
         `).join('')}
       </div>
@@ -412,7 +412,7 @@ function renderCorpoModal() {
     <div class="modal-secao-label">Observação (opcional)</div>
     <textarea id="modal-observacao-extra" rows="2"
       oninput="estado.observacaoAtual = this.value"
-      placeholder="Ex: com gelo e limão, só gelo, cortar ao meio...">${estado.observacaoAtual}</textarea>
+      placeholder="Ex: com gelo e limão, só gelo, cortar ao meio...">${escapeHtml(estado.observacaoAtual)}</textarea>
   `;
 
   corpo.innerHTML = htmlEspecifico;
@@ -588,9 +588,9 @@ function renderCarrinho() {
     lista.innerHTML = estado.carrinho.map((l, i) => `
       <div class="carrinho-linha">
         <div>
-          <div class="carrinho-linha-nome">${l.quantidade}× ${l.item.nome}</div>
-          ${l.sabores.length ? `<div class="carrinho-linha-obs">${l.sabores.map(s => s.nome).join(', ')}</div>` : ''}
-          ${l.observacao ? `<div class="carrinho-linha-obs">${l.observacao}</div>` : ''}
+          <div class="carrinho-linha-nome">${l.quantidade}× ${escapeHtml(l.item.nome)}</div>
+          ${l.sabores.length ? `<div class="carrinho-linha-obs">${l.sabores.map(s => escapeHtml(s.nome)).join(', ')}</div>` : ''}
+          ${l.observacao ? `<div class="carrinho-linha-obs">${escapeHtml(l.observacao)}</div>` : ''}
         </div>
         <div class="carrinho-linha-direita">
           <span>R$ ${(l.precoUnitario * l.quantidade).toFixed(2).replace('.', ',')}</span>
@@ -624,7 +624,7 @@ function renderObsGerais() {
   const lista = document.getElementById('lista-obs-gerais');
   lista.innerHTML = estado.observacoesGerais.map((texto, i) => `
     <div class="obs-geral-item">
-      <span>${texto}</span>
+      <span>${escapeHtml(texto)}</span>
       <button class="btn-remover" onclick="removerObsGeral(${i})">✕</button>
     </div>
   `).join('');
@@ -745,18 +745,18 @@ async function abrirPedidosEnviados() {
   }
 
   const htmlItens = (itens || []).map(pi => {
-    const sabores = pi.pedido_item_ingredientes.map(s => s.ingredientes.nome).join(', ');
+    const sabores = pi.pedido_item_ingredientes.map(s => escapeHtml(s.ingredientes.nome)).join(', ');
     const horario = new Date(pi.criado_em).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
     // Só permite cancelar se ainda não foi entregue (ainda dá tempo de avisar a cozinha)
     const podeCancel = pi.status === 'enviado' || pi.status === 'impresso';
     return `
       <div class="pedido-enviado-linha">
         <div class="linha-topo">
-          <span>${pi.quantidade}× ${pi.itens_cardapio.nome}</span>
+          <span>${pi.quantidade}× ${escapeHtml(pi.itens_cardapio.nome)}</span>
           <span>R$ ${(pi.preco_unitario_calculado * pi.quantidade).toFixed(2).replace('.', ',')}</span>
         </div>
         ${sabores ? `<div class="linha-detalhe">${sabores}</div>` : ''}
-        ${pi.observacao ? `<div class="linha-detalhe">${pi.observacao}</div>` : ''}
+        ${pi.observacao ? `<div class="linha-detalhe">${escapeHtml(pi.observacao)}</div>` : ''}
         <div class="linha-detalhe">${horario}</div>
         <span class="linha-status">${pi.status}</span>
         ${podeCancel ? `<button class="btn-cancelar-item" onclick="cancelarItemEnviado('${pi.id}')">Cancelar item</button>` : ''}
@@ -765,7 +765,7 @@ async function abrirPedidosEnviados() {
   }).join('');
 
   const htmlObs = (obsGerais || []).map(o => `
-    <div class="obs-geral-enviada">📝 ${o.texto}</div>
+    <div class="obs-geral-enviada">📝 ${escapeHtml(o.texto)}</div>
   `).join('');
 
   lista.innerHTML = htmlBotaoConferencia + htmlItens + htmlObs;

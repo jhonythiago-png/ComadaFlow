@@ -69,7 +69,7 @@ function renderCategorias() {
 
   container.innerHTML = estado.categorias.map(c => `
     <div class="categoria-linha">
-      <input type="text" value="${c.nome}" onchange="renomearCategoria('${c.id}', this.value)">
+      <input type="text" value="${escapeHtml(c.nome)}" onchange="renomearCategoria('${c.id}', this.value)">
       <input type="number" class="categoria-ordem" value="${c.ordem_exibicao}" onchange="reordenarCategoria('${c.id}', this.value)" title="Ordem de exibição">
     </div>
   `).join('');
@@ -78,7 +78,7 @@ function renderCategorias() {
 function preencherSelectCategorias() {
   const select = document.getElementById('input-item-categoria');
   if (!select) return;
-  select.innerHTML = estado.categorias.map(c => `<option value="${c.id}">${c.nome}</option>`).join('');
+  select.innerHTML = estado.categorias.map(c => `<option value="${c.id}">${escapeHtml(c.nome)}</option>`).join('');
 }
 
 async function renomearCategoria(id, novoNome) {
@@ -145,7 +145,7 @@ function renderIngredientes() {
 
   container.innerHTML = estado.ingredientes.map(ing => `
     <div class="ingrediente-chip ${!ing.disponivel ? 'indisponivel' : ''}">
-      <span class="ingrediente-nome-clicavel" onclick="abrirModalIngrediente('${ing.id}')">${ing.nome}</span>
+      <span class="ingrediente-nome-clicavel" onclick="abrirModalIngrediente('${ing.id}')">${escapeHtml(ing.nome)}</span>
       <label class="switch-disponivel switch-mini" title="Disponível">
         <input type="checkbox" ${ing.disponivel ? 'checked' : ''} onchange="alternarDisponibilidadeIngrediente('${ing.id}', this.checked)">
         <span class="switch-slider"></span>
@@ -270,12 +270,12 @@ function renderItens() {
 
   container.innerHTML = categoriasOrdenadas.map(([catNome, dados]) => `
     <div class="grupo-categoria">
-      <div class="grupo-categoria-titulo">${catNome}</div>
+      <div class="grupo-categoria-titulo">${escapeHtml(catNome)}</div>
       ${dados.itens.map(item => `
         <div class="item-linha ${!item.disponivel ? 'indisponivel' : ''}">
           <div class="item-linha-clicavel" onclick="abrirModalItem('${item.id}')">
             <div class="item-linha-nome">
-              ${item.nome}
+              ${escapeHtml(item.nome)}
               ${item.destaque ? '<span class="badge-destaque-mini">destaque</span>' : ''}
             </div>
             <div class="item-linha-detalhe">${NOMES_TIPO[item.tipo_montagem]} · R$ ${Number(item.preco_base).toFixed(2).replace('.', ',')}</div>
@@ -401,7 +401,7 @@ function renderChecklistIngredientes(papelAlvo, mostrarPreco) {
         <label class="ingrediente-modal-check">
           <input type="checkbox" ${marcado ? 'checked' : ''}
                  onchange="alternarIngredienteModal('${ing.id}', this.checked, '${papelAlvo}')">
-          <span>${ing.nome}</span>
+          <span>${escapeHtml(ing.nome)}</span>
         </label>
         ${mostrarPreco ? `
           <input type="text" inputmode="decimal" class="ingrediente-modal-preco"

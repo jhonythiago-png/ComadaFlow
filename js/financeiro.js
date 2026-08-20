@@ -221,7 +221,7 @@ async function carregarProdutosMaisVendidos() {
   container.innerHTML = ranking.map(([nome, dados], i) => `
     <div class="produto-linha">
       <span class="produto-posicao">${i + 1}º</span>
-      <span class="produto-nome">${nome}</span>
+      <span class="produto-nome">${escapeHtml(nome)}</span>
       <span class="produto-qtd">${dados.quantidade}x</span>
       <span class="produto-receita">${formatarMoeda(dados.receita)}</span>
     </div>
@@ -259,7 +259,7 @@ function renderDespesas() {
   container.innerHTML = estado.despesas.map(d => `
     <div class="despesa-linha">
       <div class="despesa-esquerda">
-        <div class="despesa-descricao">${d.descricao}</div>
+        <div class="despesa-descricao">${escapeHtml(d.descricao)}</div>
         <div class="despesa-detalhe">${NOMES_CATEGORIA[d.categoria]} · vence ${formatarDataBR(d.data_vencimento)}</div>
       </div>
       <div class="despesa-direita">
@@ -367,7 +367,7 @@ function renderSangrias() {
     return `
       <div class="sangria-linha">
         <div>
-          <div class="sangria-descricao">${s.motivo || (positivo ? 'Adição de caixa' : 'Retirada de caixa')}</div>
+          <div class="sangria-descricao">${escapeHtml(s.motivo) || (positivo ? 'Adição de caixa' : 'Retirada de caixa')}</div>
           <div class="sangria-detalhe">${dataTexto}</div>
         </div>
         <span class="sangria-valor" style="color:${positivo ? 'var(--ok)' : 'var(--paprika)'}">${sinal}${formatarMoeda(Math.abs(s.valor))}</span>
