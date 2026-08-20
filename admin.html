@@ -150,19 +150,19 @@
     </div>
     <div class="campo">
       <label>Usuário (pra login)</label>
-      <input type="text" id="input-master-username" placeholder="Ex: joao" autocapitalize="none">
+      <input type="text" id="input-master-username" placeholder="Ex: joao" autocapitalize="none" autocomplete="off">
     </div>
     <div class="campo">
       <label>Senha</label>
       <div style="display:flex; gap:8px;">
-        <input type="password" id="input-master-senha" placeholder="Mínimo 6 caracteres" style="flex:1;">
+        <input type="password" id="input-master-senha" placeholder="Mínimo 6 caracteres" autocomplete="new-password" style="flex:1;">
         <button type="button" class="btn-ghost" style="flex-shrink:0; padding:0 14px;" onclick="alternarMostrarSenha('input-master-senha', this)">👁</button>
       </div>
     </div>
     <div class="campo">
       <label>Confirmar senha</label>
       <div style="display:flex; gap:8px;">
-        <input type="password" id="input-master-senha-confirmar" placeholder="Digite de novo" style="flex:1;">
+        <input type="password" id="input-master-senha-confirmar" placeholder="Digite de novo" autocomplete="new-password" style="flex:1;">
         <button type="button" class="btn-ghost" style="flex-shrink:0; padding:0 14px;" onclick="alternarMostrarSenha('input-master-senha-confirmar', this)">👁</button>
       </div>
     </div>
@@ -199,14 +199,14 @@
     <div class="campo">
       <label>Nova senha provisória</label>
       <div style="display:flex; gap:8px;">
-        <input type="password" id="input-resetar-senha" style="flex:1;">
+        <input type="password" id="input-resetar-senha" autocomplete="new-password" style="flex:1;">
         <button type="button" class="btn-ghost" style="flex-shrink:0; padding:0 14px;" onclick="alternarMostrarSenha('input-resetar-senha', this)">👁</button>
       </div>
     </div>
     <div class="campo">
       <label>Confirmar senha</label>
       <div style="display:flex; gap:8px;">
-        <input type="password" id="input-resetar-senha-confirmar" style="flex:1;">
+        <input type="password" id="input-resetar-senha-confirmar" autocomplete="new-password" style="flex:1;">
         <button type="button" class="btn-ghost" style="flex-shrink:0; padding:0 14px;" onclick="alternarMostrarSenha('input-resetar-senha-confirmar', this)">👁</button>
       </div>
     </div>
