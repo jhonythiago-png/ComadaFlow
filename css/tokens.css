@@ -1,5 +1,5 @@
 /* ============================================================
-   ComandaFlow — Design Tokens
+   Evvo Food — Design Tokens
    ============================================================ */
 
 :root {
@@ -146,6 +146,7 @@ body.app-shell {
   border-top: 1px solid var(--ink-line); flex-shrink: 0; background: var(--ink);
 }
 #sidebar .sidebar-logo { display: none; } /* sem espaço pra logo na barra de baixo do celular */
+#sidebar .sidebar-slogan { display: none; } /* mesma lógica — sem espaço no celular */
 /* "display:contents" tira a <nav> do layout e deixa os links dela virarem
    abas diretas do #sidebar — assim TODOS os itens (inclusive "sair") dividem
    o espaço igualmente, em vez de ficar um grupo grudado na esquerda e outro na ponta */
@@ -170,7 +171,10 @@ body.app-shell {
     width: 220px; height: 100vh; border-top: none; border-right: 1px solid var(--ink-line);
     padding: 24px 16px; flex-shrink: 0;
   }
-  #sidebar .sidebar-logo { display: block; font-size: 17px; margin-bottom: 28px; }
+  #sidebar .sidebar-logo { display: block; font-size: 17px; margin-bottom: 6px; }
+  #sidebar .sidebar-slogan {
+    display: block; font-size: 10.5px; color: var(--text-muted); line-height: 1.4; margin-bottom: 26px;
+  }
   #sidebar .sidebar-nav { display: flex; flex-direction: column; gap: 2px; flex: unset; }
   #sidebar .sidebar-nav-link { flex: unset; text-align: left; padding: 10px 14px; border-radius: 10px; max-width: none; }
   #sidebar .sidebar-footer {
@@ -180,3 +184,5 @@ body.app-shell {
   #sidebar .sidebar-footer span { display: block; }
   #sidebar .sidebar-footer button { flex: unset; padding: 0; text-decoration: underline; }
 }
+
+
