@@ -60,7 +60,20 @@
   .cliente-linha { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
   .cliente-acoes { display: flex; gap: 10px; flex-shrink: 0; }
   .btn-toggle-cliente { font-size: 11px; color: var(--crust); text-decoration: underline; white-space: nowrap; }
+  .btn-resetar-senha { font-size: 11px; color: var(--text-muted); text-decoration: underline; white-space: nowrap; }
   .btn-excluir-cliente { font-size: 11px; color: var(--paprika); text-decoration: underline; white-space: nowrap; }
+
+  #modal-resetar-senha-overlay {
+    display: none; position: fixed; inset: 0; background: rgba(0,0,0,.6);
+    align-items: center; justify-content: center; z-index: 100; padding: 20px;
+  }
+  #modal-resetar-senha-conteudo {
+    background: var(--ink); border-radius: var(--radius-lg); padding: 22px;
+    width: 100%; max-width: 400px;
+  }
+  #modal-resetar-senha-conteudo h3 { font-family: var(--font-display); margin-bottom: 10px; }
+  .resetar-senha-aviso { font-size: 12px; color: var(--text-muted); margin-bottom: 18px; line-height: 1.5; }
+  .resetar-senha-aviso strong { color: var(--text-primary); }
 
   #modal-confirmacao-generica-overlay {
     display: none; position: fixed; inset: 0; background: rgba(0,0,0,.6);
@@ -169,6 +182,38 @@
     <div class="modal-botoes">
       <button class="btn-ghost" onclick="fecharModalConfirmacaoGenerica()">Cancelar</button>
       <button class="btn-danger" onclick="executarConfirmacaoGenerica()">Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: resetar senha do master -->
+<div id="modal-resetar-senha-overlay">
+  <div id="modal-resetar-senha-conteudo">
+    <h3>Resetar senha do Master</h3>
+    <p class="resetar-senha-aviso">
+      Cliente: <strong id="resetar-senha-cliente-nome"></strong><br>
+      Isso define uma senha PROVISÓRIA. No próximo login, o sistema vai obrigar
+      a pessoa a trocar por uma senha só dela antes de conseguir usar qualquer coisa.
+    </p>
+
+    <div class="campo">
+      <label>Nova senha provisória</label>
+      <div style="display:flex; gap:8px;">
+        <input type="password" id="input-resetar-senha" style="flex:1;">
+        <button type="button" class="btn-ghost" style="flex-shrink:0; padding:0 14px;" onclick="alternarMostrarSenha('input-resetar-senha', this)">👁</button>
+      </div>
+    </div>
+    <div class="campo">
+      <label>Confirmar senha</label>
+      <div style="display:flex; gap:8px;">
+        <input type="password" id="input-resetar-senha-confirmar" style="flex:1;">
+        <button type="button" class="btn-ghost" style="flex-shrink:0; padding:0 14px;" onclick="alternarMostrarSenha('input-resetar-senha-confirmar', this)">👁</button>
+      </div>
+    </div>
+
+    <div class="modal-botoes">
+      <button class="btn-ghost" onclick="fecharModalResetarSenha()">Cancelar</button>
+      <button class="btn-primary" onclick="confirmarResetarSenha()">Definir senha provisória</button>
     </div>
   </div>
 </div>
