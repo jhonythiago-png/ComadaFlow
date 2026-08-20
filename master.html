@@ -32,6 +32,14 @@
   }
   .aba-botao.on { background: var(--crust); color: var(--ink); border-color: var(--crust); }
 
+  /* No celular, 4 abas numa linha só ficam cortando/rolando de lado —
+     vira uma grade 2×2, que cabe inteira na tela e parece nativo de app.
+     No desktop (ver media query lá embaixo) volta a ser 1 linha só. */
+  @media (max-width: 859px) {
+    .abas { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .aba-botao { padding: 11px 8px; font-size: 12.5px; text-align: center; border-radius: 12px; }
+  }
+
   .painel {
     background: var(--ink-soft); border: 1px solid var(--ink-line); border-radius: var(--radius-lg);
     padding: 20px 22px; margin-bottom: 20px;
