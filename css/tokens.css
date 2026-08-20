@@ -173,7 +173,8 @@ body.app-shell {
   }
   #sidebar .sidebar-logo { display: block; font-size: 17px; margin-bottom: 6px; }
   #sidebar .sidebar-slogan {
-    display: block; font-size: 10.5px; color: var(--text-muted); line-height: 1.4; margin-bottom: 26px;
+    display: block; font-size: 10.5px; color: var(--crust); line-height: 1.4; margin-bottom: 26px;
+    font-family: var(--font-mono); letter-spacing: .02em;
   }
   #sidebar .sidebar-nav { display: flex; flex-direction: column; gap: 2px; flex: unset; }
   #sidebar .sidebar-nav-link { flex: unset; text-align: left; padding: 10px 14px; border-radius: 10px; max-width: none; }
@@ -184,5 +185,3 @@ body.app-shell {
   #sidebar .sidebar-footer span { display: block; }
   #sidebar .sidebar-footer button { flex: unset; padding: 0; text-decoration: underline; }
 }
-
-
