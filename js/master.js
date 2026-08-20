@@ -16,6 +16,118 @@ function alternarMostrarSenha(idCampo, botao) {
 }
 
 // ------------------------------------------------------------
+// Exemplos preenchidos do guia de cardápio (só ilustrativo,
+// não salva nada — ajuda o Master a visualizar cada tipo de item)
+// ------------------------------------------------------------
+const EXEMPLOS_TIPO_ITEM = {
+  fixo: {
+    titulo: 'Exemplo: item "Fixo" — Frango Especial',
+    nome: 'Frango Especial',
+    descricao: 'Frango, catupiry, queijo, presunto, bacon, palmito, milho e orégano',
+    preco: '18,00',
+    categoria: 'Pastelão',
+    tipo: 'Fixo',
+    padrao: ['Frango', 'Catupiry', 'Queijo', 'Presunto', 'Bacon', 'Palmito', 'Milho', 'Orégano'],
+    opcao: [{ nome: 'Cheddar', preco: '3,00' }, { nome: 'Calabresa', preco: '3,00' }, { nome: 'Ovo', preco: '3,00' }],
+    labelOpcao: 'Acréscimos disponíveis (opcional, com custo extra)',
+  },
+  monte_sabores: {
+    titulo: 'Exemplo: "Monte-sabores" — Monte seu Pastel, 2 sabores',
+    nome: 'Monte seu Pastel — 2 sabores',
+    descricao: 'Escolha 2 sabores dentre as opções',
+    preco: '15,00',
+    categoria: 'Monte seu Pastel',
+    tipo: 'Monte-sabores',
+    qtdSabores: '2',
+    opcao: [{ nome: 'Carne', preco: '3,00' }, { nome: 'Frango', preco: '3,00' }, { nome: 'Queijo', preco: '3,00' }, { nome: 'Bacon', preco: '3,00' }, { nome: '(+9 outros sabores)', preco: '3,00' }],
+    labelOpcao: 'Sabores disponíveis (cota de 2 inclusa; o que passar cobra o preço abaixo)',
+  },
+  escolha_um: {
+    titulo: 'Exemplo: "Escolha 1 sabor" — Pastel Doce',
+    nome: 'Pastel Doce',
+    descricao: 'Escolha 1 sabor',
+    preco: '10,00',
+    categoria: 'Doces',
+    tipo: 'Escolha 1 sabor',
+    opcao: [{ nome: 'Chocolate', preco: null }, { nome: 'Brigadeiro', preco: null }, { nome: 'Beijinho', preco: null }, { nome: '(+5 outros sabores)', preco: null }],
+    labelOpcao: 'Sabores disponíveis pra escolher (sem custo extra)',
+  },
+  venda_direta: {
+    titulo: 'Exemplo: "Venda direta" — Refrigerante Lata 350ml',
+    nome: 'Refrigerante Lata 350ml',
+    descricao: '',
+    preco: '6,00',
+    categoria: 'Bebidas',
+    tipo: 'Venda direta',
+  },
+};
+
+function abrirExemploTipo(tipo) {
+  const ex = EXEMPLOS_TIPO_ITEM[tipo];
+  if (!ex) return;
+
+  document.getElementById('exemplo-item-titulo').textContent = ex.titulo;
+  document.getElementById('exemplo-nome').value = ex.nome;
+  document.getElementById('exemplo-descricao').value = ex.descricao || '(sem descrição)';
+  document.getElementById('exemplo-preco').value = ex.preco;
+  document.getElementById('exemplo-categoria').value = ex.categoria;
+  document.getElementById('exemplo-tipo').value = ex.tipo;
+
+  const campoQtd = document.getElementById('exemplo-campo-qtd');
+  if (ex.qtdSabores) {
+    campoQtd.style.display = 'block';
+    document.getElementById('exemplo-qtd-sabores').value = ex.qtdSabores;
+  } else {
+    campoQtd.style.display = 'none';
+  }
+
+  const secaoIngredientes = document.getElementById('exemplo-secao-ingredientes');
+  const labelPadrao = document.getElementById('exemplo-label-padrao');
+  const listaPadrao = document.getElementById('exemplo-lista-padrao');
+  const labelOpcao = document.getElementById('exemplo-label-opcao');
+  const listaOpcao = document.getElementById('exemplo-lista-opcao');
+
+  if (!ex.padrao && !ex.opcao) {
+    // Venda direta — não usa ingredientes nenhum
+    secaoIngredientes.style.display = 'none';
+  } else {
+    secaoIngredientes.style.display = 'block';
+
+    if (ex.padrao) {
+      labelPadrao.style.display = 'block';
+      listaPadrao.style.display = 'flex';
+      listaPadrao.innerHTML = ex.padrao.map(nome => `
+        <span class="exemplo-chip marcado"><span class="check-visual">✅</span> ${nome}</span>
+      `).join('');
+    } else {
+      labelPadrao.style.display = 'none';
+      listaPadrao.style.display = 'none';
+    }
+
+    if (ex.opcao) {
+      labelOpcao.textContent = ex.labelOpcao;
+      labelOpcao.style.display = 'block';
+      listaOpcao.style.display = 'flex';
+      listaOpcao.innerHTML = ex.opcao.map(o => `
+        <span class="exemplo-chip marcado">
+          <span class="check-visual">✅</span> ${o.nome}
+          ${o.preco ? `<span class="preco-visual">+R$${o.preco}</span>` : ''}
+        </span>
+      `).join('');
+    } else {
+      labelOpcao.style.display = 'none';
+      listaOpcao.style.display = 'none';
+    }
+  }
+
+  document.getElementById('modal-exemplo-item-overlay').style.display = 'flex';
+}
+
+function fecharExemploTipo() {
+  document.getElementById('modal-exemplo-item-overlay').style.display = 'none';
+}
+
+// ------------------------------------------------------------
 // Modal de confirmação genérico — substitui o confirm() nativo,
 // que não é confiável em apps salvos na tela inicial do iPhone
 // ------------------------------------------------------------
