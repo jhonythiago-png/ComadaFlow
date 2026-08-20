@@ -233,14 +233,14 @@
       <div class="campo">
         <label>Nova senha (mínimo 6 caracteres)</label>
         <div style="display:flex; gap:8px;">
-          <input type="password" id="input-minha-conta-senha" placeholder="Deixe em branco pra não mudar a senha" style="flex:1;">
+          <input type="password" id="input-minha-conta-senha" placeholder="Deixe em branco pra não mudar a senha" autocomplete="new-password" style="flex:1;">
           <button type="button" class="btn-ghost" style="flex-shrink:0; padding:0 14px;" onclick="alternarMostrarSenha('input-minha-conta-senha', this)">👁</button>
         </div>
       </div>
       <div class="campo">
         <label>Confirmar nova senha</label>
         <div style="display:flex; gap:8px;">
-          <input type="password" id="input-minha-conta-senha-confirmar" placeholder="Digite de novo pra confirmar" style="flex:1;">
+          <input type="password" id="input-minha-conta-senha-confirmar" placeholder="Digite de novo pra confirmar" autocomplete="new-password" style="flex:1;">
           <button type="button" class="btn-ghost" style="flex-shrink:0; padding:0 14px;" onclick="alternarMostrarSenha('input-minha-conta-senha-confirmar', this)">👁</button>
         </div>
       </div>
@@ -402,19 +402,19 @@
     </div>
     <div class="campo">
       <label>Usuário (pra login)</label>
-      <input type="text" id="input-func-username" placeholder="Ex: maria" autocapitalize="none">
+      <input type="text" id="input-func-username" placeholder="Ex: maria" autocapitalize="none" autocomplete="off">
     </div>
     <div class="campo">
       <label>Senha</label>
       <div style="display:flex; gap:8px;">
-        <input type="password" id="input-func-senha" placeholder="Mínimo 6 caracteres" style="flex:1;">
+        <input type="password" id="input-func-senha" placeholder="Mínimo 6 caracteres" autocomplete="new-password" style="flex:1;">
         <button type="button" class="btn-ghost" style="flex-shrink:0; padding:0 14px;" onclick="alternarMostrarSenha('input-func-senha', this)">👁</button>
       </div>
     </div>
     <div class="campo">
       <label>Confirmar senha</label>
       <div style="display:flex; gap:8px;">
-        <input type="password" id="input-func-senha-confirmar" placeholder="Digite de novo pra confirmar" style="flex:1;">
+        <input type="password" id="input-func-senha-confirmar" placeholder="Digite de novo pra confirmar" autocomplete="new-password" style="flex:1;">
         <button type="button" class="btn-ghost" style="flex-shrink:0; padding:0 14px;" onclick="alternarMostrarSenha('input-func-senha-confirmar', this)">👁</button>
       </div>
     </div>
@@ -443,14 +443,14 @@
     <div class="campo">
       <label>Nova senha (deixe em branco pra não mudar)</label>
       <div style="display:flex; gap:8px;">
-        <input type="password" id="input-editar-func-senha" style="flex:1;">
+        <input type="password" id="input-editar-func-senha" autocomplete="new-password" style="flex:1;">
         <button type="button" class="btn-ghost" style="flex-shrink:0; padding:0 14px;" onclick="alternarMostrarSenha('input-editar-func-senha', this)">👁</button>
       </div>
     </div>
     <div class="campo">
       <label>Confirmar nova senha</label>
       <div style="display:flex; gap:8px;">
-        <input type="password" id="input-editar-func-senha-confirmar" style="flex:1;">
+        <input type="password" id="input-editar-func-senha-confirmar" autocomplete="new-password" style="flex:1;">
         <button type="button" class="btn-ghost" style="flex-shrink:0; padding:0 14px;" onclick="alternarMostrarSenha('input-editar-func-senha-confirmar', this)">👁</button>
       </div>
     </div>
