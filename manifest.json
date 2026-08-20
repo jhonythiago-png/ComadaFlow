@@ -1,7 +1,7 @@
 {
-  "name": "ComandaFlow",
-  "short_name": "ComandaFlow",
-  "description": "Assuma o comando do seu negócio.",
+  "name": "Evvo Food",
+  "short_name": "Evvo Food",
+  "description": "A evolução no comando do seu negócio.",
   "start_url": "atendente.html",
   "display": "standalone",
   "orientation": "portrait",
