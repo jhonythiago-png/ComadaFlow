@@ -130,11 +130,81 @@ function renderHistorico() {
         </div>
         <div class="historico-direita">
           <span class="historico-valor">R$ ${Number(f.valor_total).toFixed(2).replace('.', ',')}</span>
+          <button class="btn-ver-historico" onclick="verDetalhesHistorico('${f.id}')">👁️ Ver</button>
           <button class="btn-reimprimir" onclick="solicitarReimpressao('${f.id}')">🖨️ Reimprimir</button>
         </div>
       </div>
     `;
   }).join('');
+}
+
+// ------------------------------------------------------------
+// Ver detalhes de uma comanda fechada (só consulta, não imprime nada)
+// ------------------------------------------------------------
+async function verDetalhesHistorico(fechamentoId) {
+  const fechamento = estado.historico.find(f => f.id === fechamentoId);
+  if (!fechamento) return;
+
+  document.getElementById('modal-ver-historico-overlay').style.display = 'flex';
+  document.getElementById('ver-historico-titulo').textContent = rotuloComanda(fechamento.comandas);
+  document.getElementById('ver-historico-numero').textContent = `Comanda #${fechamento.comandas.numero_sequencial}`;
+  document.getElementById('ver-historico-conteudo').innerHTML = '<div class="aviso-vazio-pequeno">Carregando...</div>';
+
+  const [{ data: itens }, { data: pagamentos }] = await Promise.all([
+    supabaseClient
+      .from('pedido_itens')
+      .select(`
+        quantidade, preco_unitario_calculado, observacao,
+        itens_cardapio ( nome ),
+        pedido_item_ingredientes ( foi_acrescimo, ingredientes ( nome ) )
+      `)
+      .eq('comanda_id', fechamento.comandas.id)
+      .neq('status', 'cancelado'),
+    supabaseClient
+      .from('pagamentos')
+      .select('forma_pagamento, valor')
+      .eq('fechamento_id', fechamentoId),
+  ]);
+
+  const nomesFormaPagamento = { dinheiro: 'Dinheiro', debito: 'Cartão Débito', credito: 'Cartão Crédito', pix: 'Pix' };
+
+  const htmlItens = (itens || []).map(item => {
+    const sabores = item.pedido_item_ingredientes.filter(s => !s.foi_acrescimo).map(s => escapeHtml(s.ingredientes.nome)).join(', ');
+    const acrescimos = item.pedido_item_ingredientes.filter(s => s.foi_acrescimo).map(s => escapeHtml(s.ingredientes.nome)).join(', ');
+    return `
+      <div class="ver-historico-item">
+        <div class="ver-historico-item-topo">
+          <span>${item.quantidade}× ${escapeHtml(item.itens_cardapio.nome)}</span>
+          <span>R$ ${(item.preco_unitario_calculado * item.quantidade).toFixed(2).replace('.', ',')}</span>
+        </div>
+        ${sabores ? `<div class="ver-historico-item-detalhe">${sabores}</div>` : ''}
+        ${acrescimos ? `<div class="ver-historico-item-detalhe">+ ACRÉSCIMO: ${acrescimos}</div>` : ''}
+        ${item.observacao ? `<div class="ver-historico-item-detalhe">OBS: ${escapeHtml(item.observacao)}</div>` : ''}
+      </div>
+    `;
+  }).join('');
+
+  const htmlPagamentos = (pagamentos || []).map(p => `
+    <div class="ver-historico-pagamento">
+      <span>${nomesFormaPagamento[p.forma_pagamento] || p.forma_pagamento}</span>
+      <span>R$ ${Number(p.valor).toFixed(2).replace('.', ',')}</span>
+    </div>
+  `).join('');
+
+  document.getElementById('ver-historico-conteudo').innerHTML = `
+    <div class="ver-historico-secao-label">Itens</div>
+    ${htmlItens || '<div class="aviso-vazio-pequeno">Nenhum item.</div>'}
+    <div class="ver-historico-secao-label">Pagamento</div>
+    ${htmlPagamentos || '<div class="aviso-vazio-pequeno">Nenhum pagamento registrado.</div>'}
+    <div class="ver-historico-total">
+      <span>TOTAL</span>
+      <span>R$ ${Number(fechamento.valor_total).toFixed(2).replace('.', ',')}</span>
+    </div>
+  `;
+}
+
+function fecharVerHistorico() {
+  document.getElementById('modal-ver-historico-overlay').style.display = 'none';
 }
 
 async function solicitarReimpressao(fechamentoId) {
