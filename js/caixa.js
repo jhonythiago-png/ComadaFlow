@@ -10,6 +10,8 @@ const estado = {
   taxaServicoPercentual: 0,
   taxaEntregaValor: 0,
   pagamentos: [],               // [{ forma, valor }]
+  historico: [],
+  periodoHistorico: 'hoje',
 };
 
 // ------------------------------------------------------------
@@ -51,6 +53,108 @@ async function carregarComandas() {
 
   estado.comandas = data || [];
   renderComandas();
+}
+
+// ------------------------------------------------------------
+// Histórico de comandas fechadas + reimpressão
+// ------------------------------------------------------------
+function abrirHistorico() {
+  document.getElementById('tela-comandas').style.display = 'none';
+  document.getElementById('tela-historico').style.display = 'flex';
+  selecionarPeriodoHistorico(estado.periodoHistorico);
+}
+
+function fecharHistorico() {
+  document.getElementById('tela-historico').style.display = 'none';
+  document.getElementById('tela-comandas').style.display = 'flex';
+}
+
+function selecionarPeriodoHistorico(periodo) {
+  estado.periodoHistorico = periodo;
+  document.querySelectorAll('.historico-periodo .periodo-chip').forEach(el => el.classList.remove('on'));
+  document.getElementById(`chip-historico-${periodo}`).classList.add('on');
+  carregarHistorico();
+}
+
+async function carregarHistorico() {
+  const grid = document.getElementById('grid-historico');
+  grid.innerHTML = '<div class="aviso-vazio">Carregando...</div>';
+
+  const hoje = new Date();
+  const fim = hoje.toISOString();
+  let inicioData;
+  if (estado.periodoHistorico === 'hoje') {
+    inicioData = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate());
+  } else {
+    inicioData = new Date(hoje);
+    inicioData.setDate(inicioData.getDate() - 6);
+    inicioData.setHours(0, 0, 0, 0);
+  }
+
+  const { data, error } = await supabaseClient
+    .from('fechamentos')
+    .select(`
+      id, valor_total, fechado_em,
+      comandas!inner ( id, numero_sequencial, tipo, numero_mesa, nome_cliente, identificador_pessoa, estabelecimento_id, status )
+    `)
+    .eq('comandas.estabelecimento_id', estado.perfil.estabelecimento_id)
+    .eq('comandas.status', 'fechada')
+    .gte('fechado_em', inicioData.toISOString())
+    .lte('fechado_em', fim)
+    .order('fechado_em', { ascending: false })
+    .limit(50);
+
+  if (error) { console.error(error); grid.innerHTML = '<div class="aviso-vazio">Erro ao carregar histórico.</div>'; return; }
+
+  estado.historico = data || [];
+  renderHistorico();
+}
+
+function renderHistorico() {
+  const grid = document.getElementById('grid-historico');
+  document.getElementById('contador-historico').textContent =
+    `${estado.historico.length} fechada${estado.historico.length !== 1 ? 's' : ''}`;
+
+  if (estado.historico.length === 0) {
+    grid.innerHTML = '<div class="aviso-vazio">Nenhuma comanda fechada nesse período.</div>';
+    return;
+  }
+
+  grid.innerHTML = estado.historico.map(f => {
+    const horario = new Date(f.fechado_em).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+    return `
+      <div class="historico-linha">
+        <div class="historico-info">
+          <div class="badge">${rotuloComanda(f.comandas)}</div>
+          <div class="detalhe">#${f.comandas.numero_sequencial} · ${horario}</div>
+        </div>
+        <div class="historico-direita">
+          <span class="historico-valor">R$ ${Number(f.valor_total).toFixed(2).replace('.', ',')}</span>
+          <button class="btn-reimprimir" onclick="solicitarReimpressao('${f.id}')">🖨️ Reimprimir</button>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+async function solicitarReimpressao(fechamentoId) {
+  const fechamento = estado.historico.find(f => f.id === fechamentoId);
+  if (!fechamento) return;
+
+  const { error } = await supabaseClient.from('solicitacoes_impressao').insert({
+    comanda_id: fechamento.comandas.id,
+    fechamento_id: fechamentoId,
+    tipo: 'reimpressao_fechamento',
+    criado_por: estado.perfil.id,
+  });
+
+  if (error) {
+    mostrarToast('Erro ao pedir reimpressão.', 'erro');
+    console.error(error);
+    return;
+  }
+
+  mostrarToast('Reimpressão enviada! 🖨️');
 }
 
 function escutarMudancas() {
