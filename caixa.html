@@ -20,10 +20,37 @@
   /* ---- Tela: lista de comandas ---- */
   #tela-comandas { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
   .comandas-header {
-    padding: 18px 20px 12px; display: flex; justify-content: space-between; align-items: baseline;
+    padding: 18px 20px 12px; display: flex; justify-content: space-between; align-items: baseline; gap: 10px; flex-wrap: wrap;
   }
   .comandas-header h2 { font-family: var(--font-display); font-size: 20px; font-weight: 700; }
-  .comandas-header .contador { font-family: var(--font-mono); font-size: 12px; color: var(--text-muted); }
+  .comandas-header .contador { font-family: var(--font-mono); font-size: 12px; color: var(--text-muted); flex: 1; }
+  .btn-historico {
+    font-size: 12px; font-weight: 600; padding: 8px 14px; border-radius: 16px;
+    background: var(--ink-line); color: var(--text-primary);
+  }
+
+  /* ---- Tela: histórico ---- */
+  #tela-historico { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+  .historico-periodo { display: flex; gap: 8px; padding: 0 20px 12px; }
+  .historico-periodo .periodo-chip {
+    padding: 7px 14px; border-radius: 16px; border: 1px solid var(--ink-line);
+    background: var(--ink-soft); color: var(--text-muted); font-size: 12.5px; font-weight: 600;
+  }
+  .historico-periodo .periodo-chip.on { background: var(--crust); color: var(--ink); border-color: var(--crust); }
+  #grid-historico { flex: 1; overflow-y: auto; padding: 4px 20px 24px; }
+  .historico-linha {
+    display: flex; justify-content: space-between; align-items: center;
+    background: var(--ink-soft); border: 1px solid var(--ink-line); border-radius: var(--radius-md);
+    padding: 14px 16px; margin-bottom: 8px; gap: 10px; flex-wrap: wrap;
+  }
+  .historico-info .badge { font-family: var(--font-display); font-weight: 700; font-size: 14px; }
+  .historico-info .detalhe { font-size: 11.5px; color: var(--text-muted); font-family: var(--font-mono); margin-top: 3px; }
+  .historico-direita { display: flex; align-items: center; gap: 14px; }
+  .historico-valor { font-family: var(--font-mono); font-size: 14px; font-weight: 600; }
+  .btn-reimprimir {
+    font-size: 12px; font-weight: 600; padding: 7px 12px; border-radius: 10px;
+    background: var(--ink-line); color: var(--text-primary); white-space: nowrap;
+  }
 
   #grid-comandas {
     flex: 1; overflow-y: auto; padding: 4px 20px 24px;
@@ -147,8 +174,23 @@
   <div class="comandas-header">
     <h2>Comandas abertas</h2>
     <span class="contador" id="contador-comandas">0 abertas</span>
+    <button class="btn-historico" onclick="abrirHistorico()">📜 Histórico</button>
   </div>
   <div id="grid-comandas"><div class="aviso-vazio">Carregando...</div></div>
+</div>
+
+<!-- TELA 1.5: histórico de comandas fechadas -->
+<div id="tela-historico" style="display:none;">
+  <div class="comandas-header">
+    <button class="voltar" onclick="fecharHistorico()">←</button>
+    <h2>Histórico</h2>
+    <span class="contador" id="contador-historico">0 fechadas</span>
+  </div>
+  <div class="historico-periodo">
+    <button class="periodo-chip on" id="chip-historico-hoje" onclick="selecionarPeriodoHistorico('hoje')">Hoje</button>
+    <button class="periodo-chip" id="chip-historico-semana" onclick="selecionarPeriodoHistorico('semana')">Últimos 7 dias</button>
+  </div>
+  <div id="grid-historico"><div class="aviso-vazio">Carregando...</div></div>
 </div>
 
 <!-- TELA 2: fechamento -->
