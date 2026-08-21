@@ -335,6 +335,17 @@ function voltarParaComandas() {
   document.getElementById('tela-cardapio').style.display = 'none';
   document.getElementById('tela-selecao-comanda').style.display = 'flex';
   estado.comandaAtual = null;
+
+  // Limpa os campos de "nova comanda" — sem isso, ficavam com o texto
+  // da última vez preenchido, dando impressão de que "já tinha salvo"
+  document.getElementById('input-numero-mesa').value = '';
+  document.getElementById('input-pessoa-mesa').value = '';
+  document.getElementById('input-nome-cliente').value = '';
+  document.getElementById('input-entrega-nome-cliente').value = '';
+  document.getElementById('input-entrega-telefone').value = '';
+  document.getElementById('input-entrega-endereco').value = '';
+  document.getElementById('input-entrega-taxa').value = '';
+
   carregarComandasAbertas();
 }
 
