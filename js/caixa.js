@@ -94,8 +94,8 @@ async function carregarHistorico() {
   const { data, error } = await supabaseClient
     .from('fechamentos')
     .select(`
-      id, valor_total, fechado_em,
-      comandas!inner ( id, numero_sequencial, tipo, numero_mesa, nome_cliente, identificador_pessoa, estabelecimento_id, status )
+      id, valor_total, subtotal_itens, taxa_servico_percentual, taxa_servico_valor, taxa_entrega_valor, fechado_em,
+      comandas!inner ( id, numero_sequencial, tipo, numero_mesa, nome_cliente, identificador_pessoa, telefone_contato, endereco_entrega, estabelecimento_id, status )
     `)
     .eq('comandas.estabelecimento_id', estado.perfil.estabelecimento_id)
     .eq('comandas.status', 'fechada')
@@ -145,9 +145,11 @@ async function verDetalhesHistorico(fechamentoId) {
   const fechamento = estado.historico.find(f => f.id === fechamentoId);
   if (!fechamento) return;
 
+  const comanda = fechamento.comandas;
+
   document.getElementById('modal-ver-historico-overlay').style.display = 'flex';
-  document.getElementById('ver-historico-titulo').textContent = rotuloComanda(fechamento.comandas);
-  document.getElementById('ver-historico-numero').textContent = `Comanda #${fechamento.comandas.numero_sequencial}`;
+  document.getElementById('ver-historico-titulo').textContent = rotuloComanda(comanda);
+  document.getElementById('ver-historico-numero').textContent = `Comanda #${comanda.numero_sequencial}`;
   document.getElementById('ver-historico-conteudo').innerHTML = '<div class="aviso-vazio-pequeno">Carregando...</div>';
 
   const [{ data: itens }, { data: pagamentos }] = await Promise.all([
@@ -158,15 +160,25 @@ async function verDetalhesHistorico(fechamentoId) {
         itens_cardapio ( nome ),
         pedido_item_ingredientes ( foi_acrescimo, ingredientes ( nome ) )
       `)
-      .eq('comanda_id', fechamento.comandas.id)
+      .eq('comanda_id', comanda.id)
       .neq('status', 'cancelado'),
     supabaseClient
       .from('pagamentos')
-      .select('forma_pagamento, valor')
+      .select('forma_pagamento, valor, valor_recebido')
       .eq('fechamento_id', fechamentoId),
   ]);
 
   const nomesFormaPagamento = { dinheiro: 'Dinheiro', debito: 'Cartão Débito', credito: 'Cartão Crédito', pix: 'Pix' };
+
+  // Endereço + telefone — igual sai no cupom, só aparece se for entrega
+  const htmlEntrega = comanda.tipo === 'entrega' ? `
+    <div class="ver-historico-secao-label">Entrega</div>
+    <div class="ver-historico-entrega">
+      ${comanda.telefone_contato ? `<div>📞 ${escapeHtml(comanda.telefone_contato)}</div>` : ''}
+      ${comanda.endereco_entrega ? `<div>📍 ${escapeHtml(comanda.endereco_entrega)}</div>` : ''}
+      ${!comanda.telefone_contato && !comanda.endereco_entrega ? '<div class="aviso-vazio-pequeno">Nenhum dado de entrega registrado.</div>' : ''}
+    </div>
+  ` : '';
 
   const htmlItens = (itens || []).map(item => {
     const sabores = item.pedido_item_ingredientes.filter(s => !s.foi_acrescimo).map(s => escapeHtml(s.ingredientes.nome)).join(', ');
@@ -184,16 +196,48 @@ async function verDetalhesHistorico(fechamentoId) {
     `;
   }).join('');
 
-  const htmlPagamentos = (pagamentos || []).map(p => `
+  // Subtotal + taxas — igual sai no cupom, cada linha só aparece se tiver valor
+  const htmlValores = `
     <div class="ver-historico-pagamento">
-      <span>${nomesFormaPagamento[p.forma_pagamento] || p.forma_pagamento}</span>
-      <span>R$ ${Number(p.valor).toFixed(2).replace('.', ',')}</span>
+      <span>Subtotal</span>
+      <span>R$ ${Number(fechamento.subtotal_itens).toFixed(2).replace('.', ',')}</span>
     </div>
-  `).join('');
+    ${Number(fechamento.taxa_servico_valor) > 0 ? `
+      <div class="ver-historico-pagamento">
+        <span>Taxa de serviço (${fechamento.taxa_servico_percentual}%)</span>
+        <span>R$ ${Number(fechamento.taxa_servico_valor).toFixed(2).replace('.', ',')}</span>
+      </div>
+    ` : ''}
+    ${Number(fechamento.taxa_entrega_valor) > 0 ? `
+      <div class="ver-historico-pagamento">
+        <span>Taxa de entrega</span>
+        <span>R$ ${Number(fechamento.taxa_entrega_valor).toFixed(2).replace('.', ',')}</span>
+      </div>
+    ` : ''}
+  `;
+
+  const htmlPagamentos = (pagamentos || []).map(p => {
+    const temTroco = p.forma_pagamento === 'dinheiro' && p.valor_recebido;
+    const troco = temTroco ? round2(p.valor_recebido - p.valor) : 0;
+    return `
+      <div class="ver-historico-pagamento">
+        <span>${nomesFormaPagamento[p.forma_pagamento] || p.forma_pagamento}</span>
+        <span>R$ ${Number(p.valor).toFixed(2).replace('.', ',')}</span>
+      </div>
+      ${temTroco ? `
+        <div class="ver-historico-item-detalhe" style="margin-bottom:6px;">
+          Cliente pagou com R$ ${Number(p.valor_recebido).toFixed(2).replace('.', ',')} — troco: R$ ${troco.toFixed(2).replace('.', ',')}
+        </div>
+      ` : ''}
+    `;
+  }).join('');
 
   document.getElementById('ver-historico-conteudo').innerHTML = `
+    ${htmlEntrega}
     <div class="ver-historico-secao-label">Itens</div>
     ${htmlItens || '<div class="aviso-vazio-pequeno">Nenhum item.</div>'}
+    <div class="ver-historico-secao-label">Valores</div>
+    ${htmlValores}
     <div class="ver-historico-secao-label">Pagamento</div>
     ${htmlPagamentos || '<div class="aviso-vazio-pequeno">Nenhum pagamento registrado.</div>'}
     <div class="ver-historico-total">
