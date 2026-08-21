@@ -685,7 +685,10 @@ async function enviarPedido() {
     mostrarToast('Pedido enviado pra cozinha! 🔥');
     estado.carrinho = [];
     estado.observacoesGerais = [];
-    renderCarrinho();
+
+    // Volta pra tela inicial automaticamente, já com tudo limpo —
+    // pedido feito, atendente já pode atender a próxima mesa
+    voltarParaComandas();
 
   } catch (erro) {
     console.error(erro);
