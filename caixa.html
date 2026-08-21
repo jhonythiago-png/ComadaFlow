@@ -41,15 +41,61 @@
   .historico-linha {
     display: flex; justify-content: space-between; align-items: center;
     background: var(--ink-soft); border: 1px solid var(--ink-line); border-radius: var(--radius-md);
-    padding: 14px 16px; margin-bottom: 8px; gap: 10px; flex-wrap: wrap;
+    padding: 14px 16px; margin-bottom: 8px; gap: 10px;
   }
   .historico-info .badge { font-family: var(--font-display); font-weight: 700; font-size: 14px; }
   .historico-info .detalhe { font-size: 11.5px; color: var(--text-muted); font-family: var(--font-mono); margin-top: 3px; }
-  .historico-direita { display: flex; align-items: center; gap: 14px; }
-  .historico-valor { font-family: var(--font-mono); font-size: 14px; font-weight: 600; }
+  .historico-direita { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+  .historico-valor { font-family: var(--font-mono); font-size: 14px; font-weight: 600; white-space: nowrap; }
+  .btn-ver-historico {
+    font-size: 12px; font-weight: 600; padding: 7px 12px; border-radius: 10px;
+    background: var(--ink-line); color: var(--text-primary); white-space: nowrap;
+  }
   .btn-reimprimir {
     font-size: 12px; font-weight: 600; padding: 7px 12px; border-radius: 10px;
     background: var(--ink-line); color: var(--text-primary); white-space: nowrap;
+  }
+
+  /* No celular: SEMPRE empilhado (rótulo em cima, valor+botões embaixo),
+     nunca deixando o layout variar conforme o texto for curto ou longo —
+     era exatamente isso que deixava cada linha com uma cara diferente */
+  @media (max-width: 640px) {
+    .historico-linha { flex-direction: column; align-items: stretch; }
+    .historico-direita { justify-content: space-between; width: 100%; margin-top: 4px; }
+  }
+
+  /* ---- Modal: ver detalhes do histórico ---- */
+  #modal-ver-historico-overlay {
+    display: none; position: fixed; inset: 0; background: rgba(0,0,0,.65);
+    align-items: center; justify-content: center; z-index: 150; padding: 20px;
+  }
+  #modal-ver-historico-conteudo {
+    background: var(--ink); border-radius: var(--radius-lg); padding: 22px;
+    width: 100%; max-width: 440px; max-height: 85vh; overflow-y: auto; position: relative;
+  }
+  .modal-fechar {
+    position: absolute; top: 16px; right: 16px; font-size: 16px; color: var(--text-muted);
+  }
+  #ver-historico-titulo { font-family: var(--font-display); font-size: 18px; font-weight: 700; margin-bottom: 2px; padding-right: 24px; }
+  .ver-historico-numero { font-family: var(--font-mono); font-size: 11px; color: var(--text-muted); margin-bottom: 18px; }
+  .ver-historico-secao-label {
+    font-family: var(--font-mono); font-size: 10.5px; text-transform: uppercase; color: var(--crust);
+    letter-spacing: .03em; margin: 16px 0 8px;
+  }
+  .ver-historico-secao-label:first-of-type { margin-top: 0; }
+  .ver-historico-item {
+    background: var(--ink-soft); border: 1px solid var(--ink-line); border-radius: var(--radius-sm);
+    padding: 10px 12px; margin-bottom: 6px;
+  }
+  .ver-historico-item-topo { display: flex; justify-content: space-between; font-size: 13px; font-weight: 600; }
+  .ver-historico-item-detalhe { font-size: 11.5px; color: var(--text-muted); margin-top: 3px; }
+  .ver-historico-pagamento {
+    display: flex; justify-content: space-between; font-size: 13px;
+    padding: 8px 0; border-bottom: 1px dashed var(--ink-line);
+  }
+  .ver-historico-total {
+    display: flex; justify-content: space-between; font-family: var(--font-display); font-weight: 700;
+    font-size: 16px; margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--ink-line);
   }
 
   #grid-comandas {
@@ -264,6 +310,16 @@
       <button class="btn-ghost" onclick="fecharModalConfirmacaoGenerica()">Cancelar</button>
       <button class="btn-danger" onclick="executarConfirmacaoGenerica()">Confirmar</button>
     </div>
+  </div>
+</div>
+
+<!-- MODAL: ver detalhes do histórico (só leitura, não imprime) -->
+<div id="modal-ver-historico-overlay">
+  <div id="modal-ver-historico-conteudo">
+    <button class="modal-fechar" onclick="fecharVerHistorico()">✕</button>
+    <h3 id="ver-historico-titulo">—</h3>
+    <div class="ver-historico-numero" id="ver-historico-numero">—</div>
+    <div id="ver-historico-conteudo"></div>
   </div>
 </div>
 
